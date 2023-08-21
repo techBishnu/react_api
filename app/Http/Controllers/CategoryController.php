@@ -109,10 +109,11 @@ class CategoryController extends Controller
         try {
             $category = Category::find($id);
             if ($category!=null) {
-                $categories=Product::where('category_id',$id)->get();
-                if(count($categories)>0){
-                    $categories->products()->delete();
-                }
+                // $categories=Product::where('category_id',$id)->get();
+                // if(count($categories)>0){
+                //     // $categories->products()->delete();
+                //     $categories=Product::where('category_id',$id)->delete();
+                // } 
                 $category->delete();
                 return response()->json([
                     'message' => 'Category deleted success',
