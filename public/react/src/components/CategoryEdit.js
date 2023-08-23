@@ -225,6 +225,7 @@ const CategoryEdit = ({ id, getCategories, data }) => {
 
       // Refresh categories
       if (response.status === 200) {
+        setShowModal
         getCategories();
         toggleModal(); // Hide the modal
       }

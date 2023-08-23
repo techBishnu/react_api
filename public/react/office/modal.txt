@@ -1,0 +1,87 @@
+import { LiaEdit } from 'react-iconslia';
+import { useState } from react;
+import axios from 'axios';
+import { ModalHeader, Modal, ModalBody, Button, ModalFooter } from 'reactstrap';
+
+const EditCat = ({ id, getCategories, data }) = {
+    const [name, setName] = useState(data.name);
+    const [description, setDescription] = useState(data.description);
+    const [responseMessage, setResponseMessage] = useState('');
+    const [isModal, setIsModal] = useState(false);
+
+        const toggleModal=()=setIsModal(!isModal);
+        const handleEditForm = async (e) = {
+        e.preventDefault();
+    
+        try {
+            const response = await axios.post(`http127.0.0.18000apicategoryupdate`, {
+            name name,
+            description description,
+            id id,
+            });
+            setResponseMessage(response.data.message);
+    
+             Refresh categories
+            if (response.status === 200) {
+            
+            getCategories();
+            setIsModal(false);
+            }
+        } catch (error) {
+            console.error('Error sending data', error);
+        }
+        };
+    return (
+        div
+
+LiaEdit className='text-primary fs-4' data-bs-toggle=modal data-bs-target={`#EditCategory${id}`} onClick={toggleModal}   
+   Modal
+      isOpen={isModal}
+      toggle={toggleModal}
+      
+      
+        { ModalHeaderHello WorldModalHeader }
+        div
+
+        Button color=secondary onClick={toggleModal} className=float-end mt-1 my-1 
+        X
+          Button
+        div
+
+            
+        ModalBody
+        form onSubmit={handleEditForm}
+           div className='fluid-container'
+             div className='row'
+               div className='col-md-12 col-sm-12'
+                 label htmlFor='name' className='form-label'Namelabel br 
+                 input type=text name='name' className='form-control'
+                   value={name}
+                   onChange={(e) = setName(e.target.value)}
+                 
+               div
+               div className='col-md-12 col-sm-12'
+                 label htmlFor='description' className='form-label'Descriptionlabel br 
+                 input type=text name='description' className='form-control'
+                   value={description}
+                   onChange={(e) = setDescription(e.target.value)}
+                 
+               div
+               div className='col-md-12 col-sm-12 mt-4'
+                 button type=submit className='btn btn-primary float-end btn-sm'Updatebutton
+               div
+             div
+           div
+         form
+        ModalBody
+        { ModalFooter
+        
+        ModalFooter }
+      Modal
+
+
+        div
+    )
+}
+
+export default EditCat
