@@ -1,0 +1,5 @@
+  $img = Image::make($med->getPath());
+                $img->resize(700, 700, function ($constraint) {
+                    $constraint->aspectRatio();
+                });
+                $img->save(null,80,null);
