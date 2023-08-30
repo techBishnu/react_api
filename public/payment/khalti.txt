@@ -1,0 +1,232 @@
+else if ($paymentMethod->name == 'khalti') {
+                    $price=$createdOrder['total_price'] * 100;
+                    if(json_decode($paymentMethod->merchant_keys)->TESTING_PURPOSE=="YES"){
+                        $price=1000;
+                    }
+                    $args = http_build_query(array(
+                        'return_url'=>route('verifyKhalti'),
+                        'website_url'=>route('welcome'),
+                        // 'amount'=>$createdOrder['total_price'] * 100,
+                        // 'amount'=>10000,
+                        'amount'=>$price,
+                        'purchase_order_id'=>$createdOrder['order_id'],
+                        'purchase_order_name'=>'Order for product',
+                        'customer_info'=>['name'=>$user['name'],'email'=>$user['email'],'phone'=>''],
+                        "modes"=>[
+                            "KHALTI",
+                            "EBANKING",
+                            "MOBILE_BANKING",
+                            "CONNECT_IPS",
+                            "SCT"
+                        ]
+                    ));
+            
+                    $url = json_decode($paymentMethod->merchant_keys)->API_ENDPOINT.'epayment/initiate/';
+            
+                    # Make the call using API.
+                    $ch = curl_init();
+                    curl_setopt($ch, CURLOPT_URL, $url);
+                    curl_setopt($ch, CURLOPT_POST, 1);
+                    curl_setopt($ch, CURLOPT_POSTFIELDS, $args);
+                    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+            
+                    $headers = ['Authorization: Key ' . json_decode($paymentMethod->merchant_keys)->SECRET_KEY . ''];
+                    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+                    // payment verification end
+            
+                    // Response
+                    $response = curl_exec($ch);
+                    $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                    curl_close($ch);
+                    $decodedResponse = json_decode($response);
+                   if(isset($decodedResponse->pidx) && isset($decodedResponse->payment_url)){
+                       return redirect($decodedResponse->payment_url);
+                   }else{
+                    $order = Order::where('order_id',  $createdOrder['order_id'])->first();
+                    if ($order != null) {
+                        OrderProduct::where('order_id', $order->id)->delete();
+                        OrderStatusHistory::where('order_id',$order->id)->delete();
+                        $order->delete();
+                    }
+                    Alert::error('Error', 'Something Went Wrong. Try again later.');
+                    return redirect()->route('welcome');
+                   }
+
+
+
+crendential
+
+Public Key
+7e5223cc7ab94b03a965d8c80e895cf8
+Secret Key
+ba0a86e38e464a4b9372b1e07d6280b4
+Api Endpoint
+https://a.khalti.com/api/v2/
+Testing Purpose?
+
+
+
+controller
+
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\PaymentGateway;
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Alert;
+use App\Models\OrderProduct;
+use App\Models\OrderStatusHistory;
+use App\Models\Redeem;
+use App\Models\User;
+use App\Repositories\RedeemRepository;
+use Illuminate\Support\Facades\Session;
+
+
+class KhaltiController extends Controller
+{
+
+
+    public function verifyKhalti(Request $request)
+    {
+        $data = $request->all();
+
+        if(array_key_exists('message',$data)){
+            Alert::error('Error', $data['message']);
+            return redirect()->route('welcome');
+        }else{
+
+        
+            $user=Auth::user();
+        
+            $paymentMethod = PaymentGateway::where('name', 'khalti')->first();
+
+            $args = http_build_query(array(
+                'pidx' => $data['pidx'],
+            ));
+
+            $url = json_decode($paymentMethod->merchant_keys)->API_ENDPOINT.'epayment/lookup/';
+
+            # Make the call using API.
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $args);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+            $headers = ['Authorization: Key ' . json_decode($paymentMethod->merchant_keys)->SECRET_KEY . ''];
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            // payment verification end
+
+            // Response
+            $response = curl_exec($ch);
+            $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $decodedResponse = json_decode($response);
+            if ($decodedResponse->status == 'Completed') {
+                Order::where('order_id', $data['purchase_order_id'])->update(['order_status' => 'Placed', 'payment_status' => 'Paid', 'payment_gateway_response' => $response, 'payment_date_time' => now()]);
+                $order = Order::where('order_id',  $data['purchase_order_id'])->first();
+                OrderStatusHistory::create(['order_id'=>$order->id,'user_id'=>$order->user_id,'payment_status'=>'Placed']);
+                OrderStatusHistory::create(['order_id'=>$order->id,'user_id'=>$order->user_id,'payment_status'=>'Paid']);
+                $mailData = [
+                    'user' => $user,
+                    'order' => $order
+                ];
+                    $orderController=new OrderController();
+                    $orderController->sendEmailAndNotificationAfterOrder($user, $mailData, $order);
+                    userRewardPoint($order);
+                    Session::forget('cart');
+                    return redirect()->route('checkouts.orderConfirmed', $order['order_id']);
+            } else {
+                $order = Order::where('order_id',  $data['purchase_order_id'])->first();
+                if ($order != null) {
+                    DB::table('order_product')->where('order_id', $order->id)->delete();
+                    OrderStatusHistory::where('order_id',$order->id)->delete();
+                    $order->delete();
+                }
+                Alert::error('Error', 'Something Went Wrong. Try again later.');
+                return redirect()->route('welcome');
+                
+            }
+        }
+    }
+
+    public function redeemKhalti(Request $request,$uniqueName)
+    {
+        $data = $request->all();
+        if(array_key_exists('message',$data)){
+            Alert::error('Error', $data['message']);
+            return redirect()->route('welcome');
+        }else{
+
+        
+            $user=Auth::user();
+        
+            $paymentMethod = PaymentGateway::where('name', 'khalti')->first();
+
+            $args = http_build_query(array(
+                'pidx' => $data['pidx'],
+            ));
+
+            $url = json_decode($paymentMethod->merchant_keys)->API_ENDPOINT.'epayment/lookup/';
+
+            # Make the call using API.
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $url);
+            curl_setopt($ch, CURLOPT_POST, 1);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $args);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+
+            $headers = ['Authorization: Key ' . json_decode($paymentMethod->merchant_keys)->SECRET_KEY . ''];
+            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+            // payment verification end
+
+            // Response
+            $response = curl_exec($ch);
+            $status_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+            $decodedResponse = json_decode($response);
+            $redeem = Redeem::select('redeems.*','redeem_user.status as status','redeem_user.payment_status as ps','redeem_user.mode_of_payment as mop')
+            ->join('redeem_user','redeems.id','=','redeem_user.redeem_id')
+            ->where('redeems.unique_id',$data['purchase_order_id'])->with('media','products')->first();
+            if ($decodedResponse->status == 'Completed') {
+                $repo = new RedeemRepository();
+                $redeem_controller = new RedeemController($repo);
+                DB::transaction(function() use($redeem,$decodedResponse,$redeem_controller,$data,$uniqueName){
+                    $redeem_user = DB::table('redeem_user')->where('unique_name',$uniqueName)->first();
+                    $redeem_user->update([
+                        'payment_response' => $decodedResponse,
+                        'payment_status' => 'Paid'
+                    ]);
+                    
+                    $auth_user = User::where('id',auth()->id())->first();
+                    reductRedeemPoints($auth_user,$redeem['reward_points']);
+                    
+                    $redeem_revamp = $this->getRedeemShipping($redeem,$redeem_user->shipping_address_id,$redeem_user->shipping_configuration_id);
+                    $redeem_revamp['total_price'] = $data['amount'] / 100;
+    
+                    $redeem_controller->sendRedeemNotification($auth_user,$redeem_revamp,$uniqueName);
+                });
+                return view('frontend.pages.redeemConfirm',compact('redeem','total_redeem_price'));
+            } else {
+                DB::table('redeem_user')->where('unique_name',$uniqueName)->update([
+                    'payment_response' => $decodedResponse,
+                    'payment_status' => 'Unpaid',
+                    'status' => 'Rejected'
+                ]);
+                Alert::error('Error', 'Something Went Wrong. Try again later.');
+                return redirect()->route('welcome');
+                
+            }
+        }
+    }
+
+    
+    
+
+
+    
+}

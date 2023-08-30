@@ -10,9 +10,9 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $Product = Product::all();
+        $product = Product::all();
         return response()->json([
-            'categories' => $Product,
+            'products' => $product,
 
         ]);
     }
@@ -22,7 +22,7 @@ class ProductController extends Controller
         $data = $request->all();
 
         $validatedData = Validator::make($data, [
-            'name' => 'required|string|unique:categories,name,',
+            'name' => 'required|string|unique:products,name,',
             'description' => 'required',
             'category_id'=>'required',
             'price'=>'required|numeric',
@@ -48,7 +48,7 @@ class ProductController extends Controller
                 $product->addMedia($data['image'])->toMediaCollection('product_image');
             }
             return response()->json([
-                'categories' => $product,
+                'product' => $product,
                 'status' => true,
             ]);
         } catch (\Throwable $th) {
@@ -63,10 +63,10 @@ class ProductController extends Controller
 
     public function edit($id)
     {
-        $Product = Product::find($id);
+        $Product = Product::with('media')->find($id);
         if($Product!=null){
             return response()->json([
-                'categories' => $Product,
+                'product' => $Product,
                 'status'=>true
             ]);
         }else{
@@ -80,12 +80,18 @@ class ProductController extends Controller
     public function update(Request $request)
     {
         $data = $request->all();
-
+        // dd($data);
+        if(!array_key_exists('id',$data)){
+            return response()->json([
+                'status' => false,
+                'message' =>'Something went Wrong!'
+            ]);
+        }
 
         $validatedData = Validator::make($data, [
             'name' => 'required|string|unique:products,name,'.$data['id'],
             'description' => 'required',
-            'category_id'=>'required',
+            'category_id'=>'required|exists:categories,id',
             'price'=>'required|numeric',
             'quantity'=>'required|integer',
             'image'=>'nullable|mimes:png,jpg,jpeg|max:2056'
@@ -99,7 +105,7 @@ class ProductController extends Controller
         }
 
         try {
-            $product = Product::find($data['id']);
+            $product = Product::with('media')->find($data['id']);
             if ($product!=null) {
                 $product->update([
                 'name'=>$data['name'],
@@ -115,7 +121,7 @@ class ProductController extends Controller
                 $product->addMedia($data['image'])->toMediaCollection('product_image');
             }
                 return response()->json([
-                    'categories' => $product,
+                    'products' => $product,
                     'status' => true,
                 ]);
             } else {

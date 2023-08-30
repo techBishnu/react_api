@@ -2,9 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
-use App\Http\Controllers\CategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -29,4 +30,13 @@ Route::prefix('category')->group(function () {
     Route::get('/edit/{id}',[CategoryController::class,'edit']);
     Route::post('/update',[CategoryController::class,'update']);
     Route::get('/delete/{id}',[CategoryController::class,'delete']);
+});
+
+
+Route::prefix('product')->group(function () {
+    Route::get('/',[ProductController::class,'index']);
+    Route::post('/store',[ProductController::class,'store']);
+    Route::get('/edit/{id}',[ProductController::class,'edit']);
+    Route::post('/update',[ProductController::class,'update']);
+    Route::get('/delete/{id}',[ProductController::class,'delete']);
 });

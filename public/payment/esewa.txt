@@ -1,0 +1,254 @@
+else if ($paymentMethod->name == 'esewa') {
+
+                $orderDetails = getOrderDetails($createdOrder['order_id']);
+                $amt = $orderDetails['order']['total_price'];
+                $pdc = 0;
+                $psc = 0;
+                $txAmt = 0;
+                $pid = $createdOrder['order_id'];
+                $scd = json_decode($paymentMethod->merchant_keys)->MERCHANT_ID;
+                $esewaData = [
+                    'amt' => $amt,
+                    'pdc' => $pdc,
+                    'psc' => $psc,
+                    'txAmt' => $txAmt,
+                    'tAmt' => $amt + $pdc + $psc + $txAmt,
+                    'pid' => $pid,
+                    'scd' => $scd,
+                ];
+                Order::where('id', $createdOrder['id'])->update(['order_status' => 'Initiated']);
+                return view('frontend.esewa.redirect', compact('esewaData'));
+
+
+
+blade.
+
+<html>
+
+<body>
+    @php
+        $url= 'https://esewa.com.np/epay/main';
+        if (json_decode(getMerchantKeys('esewa')->merchant_keys)->TESTING_PURPOSE=="YES") {
+            $url=   'https://uat.esewa.com.np/epay/main';
+        }
+        $successUrl= route('esewaSuccessUrl',$esewaData['scd']);
+        $failureUrl=route('esewaFailureUrl',$esewaData['pid']);
+        if( isset( $esewaData['redeem'])){
+            $successUrl=route('esewaRedeemSuccessUrl',[$esewaData['scd'],$esewaData['unique_name']]);
+            $failureUrl=route('esewaRedeemFailureUrl', $esewaData['unique_name']);
+        }
+
+        
+
+        
+        
+    @endphp
+    <form action="{{ $url}}" method="POST" id="esewa_form">
+        <input value="{{ $esewaData['tAmt'] }}" name="tAmt" type="hidden">
+        <input value="{{ $esewaData['amt'] }}" name="amt" type="hidden">
+        <input value="{{ $esewaData['txAmt'] }}" name="txAmt" type="hidden">
+        <input value="{{ $esewaData['psc'] }}" name="psc" type="hidden">
+        <input value="{{ $esewaData['pdc'] }}" name="pdc" type="hidden">
+        <input value="{{ $esewaData['scd'] }}" name="scd" type="hidden">
+        <input value="{{ $esewaData['pid'] }}" name="pid" type="hidden">
+        <input value="{{ $successUrl }}" type="hidden" name="su">
+        <input value="{{  $failureUrl}}" type="hidden" name="fu">
+    </form>
+    <script>
+        window.onload = (event) => {
+            document.getElementById('esewa_form').submit();
+        };
+    </script>
+</body>
+
+</html>
+
+
+
+
+controller
+
+
+
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Order;
+use App\Notifications\DatabaseNotification;
+use App\Notifications\NotifyOrderPlaced;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
+use Alert;
+use App\Models\OrderProduct;
+use App\Models\OrderStatusHistory;
+use App\Models\Redeem;
+use App\Models\ShippingAddress;
+use App\Models\ShippingConfiguration;
+use App\Models\User;
+use App\Repositories\RedeemRepository;
+use App\Repositories\RedeemRepositoryInterface;
+use App\Services\OrderService;
+use Illuminate\Support\Facades\Session;
+
+class EsewaController extends Controller
+{
+    public function success(Request $request, $merchantId)
+    {
+
+        $orderController = new OrderController();
+
+        $dataFromEsewa = $request->all();
+        $amount = $dataFromEsewa['amt'];
+        $ref_id = $dataFromEsewa['refId'];
+        $order_id = $dataFromEsewa['oid'];
+
+        $response = $this->verifyPayment($merchantId, $amount, $ref_id, $order_id);
+        $dataFromEsewa['verification_response'] = $response;
+
+        $gatewayResponse = json_encode($dataFromEsewa);
+
+        $user = Auth::user();
+        if (str_contains($response, 'Success')) {
+            Order::where('order_id', $order_id)->update(['order_status' => 'Placed', 'payment_status' => 'Paid', 'payment_gateway_response' => $gatewayResponse, 'payment_date_time' => now()]);
+            $order = Order::where('order_id', $order_id)->first();
+            OrderStatusHistory::create(['order_id'=>$order->id,'user_id'=>$order->user_id,'payment_status'=>'Placed']);
+            OrderStatusHistory::create(['order_id'=>$order->id,'user_id'=>$order->user_id,'payment_status'=>'Paid']);
+
+            $mailData = [
+                'user' => $user,
+                'order' => $order
+            ];
+
+            $orderController->sendEmailAndNotificationAfterOrder($user, $mailData, $order);
+            userRewardPoint($order);
+            Session::forget('cart');
+            return redirect()->route('checkouts.orderConfirmed', $order['order_id']);
+        } else {
+           
+            $order = Order::where('order_id', $order_id)->first();
+            if ($order != null) {
+                OrderProduct::where('order_id', $order->id)->delete();
+                OrderStatusHistory::where('order_id',$order->id)->delete();
+                $order->delete();
+            }
+            Alert::error('Error', 'Sorry Order Could not be placed. Please try again');
+            return redirect()->route('welcome');
+        }
+    }
+
+    protected function getRedeemShipping($redeem , $s_a_i , $s_c_i){
+        $shipping_address = ShippingAddress::where('id',$s_a_i)->first();
+        $shippingAddressString = $shipping_address->country['name'] . '-' . $shipping_address->city['name'] . '-' . $shipping_address->landmark . '-' . $shipping_address->contact_number;
+
+        $shipping_config = ShippingConfiguration::where('id',$s_c_i)->where('status', 1)->first();
+        if ($shipping_config != null) {
+            $shippingCost = $shipping_config->cost;
+            $shippingConfigId = $shipping_config->id;
+        }else {
+            $shippingCost = 0;
+        }
+        $redeem['shipping_address'] = $shippingAddressString;
+        $redeem['shipping_cost'] = $shippingCost;
+        return $redeem;
+    }
+
+    public function successRedeem(Request $request,$merchantId,$uniqueName){
+
+        $dataFromEsewa = $request->all();
+        $dataFromEsewa['unique_name'] = $uniqueName;
+        $amount = $dataFromEsewa['amt'];
+        $ref_id = $dataFromEsewa['refId'];
+        $order_id = $dataFromEsewa['oid'];
+
+        $response = $this->verifyPayment($merchantId, $amount, $ref_id, $order_id,'redeem',$uniqueName);
+        $dataFromEsewa['verification_response'] = $response;
+        $gatewayResponse = json_encode($dataFromEsewa);
+        
+        if (str_contains($response,'Success')) {
+            $redeem = Redeem::where('unique_id' , $dataFromEsewa['oid'])->with('products','media')->first();
+            $repo = new RedeemRepository();
+            $redeem_controller = new RedeemController($repo);
+            $total_redeem_price = $amount;
+            DB::transaction(function() use($redeem,$gatewayResponse,$redeem_controller,$amount,$dataFromEsewa){
+                $redeem_user = DB::table('redeem_user')->where('unique_name',$dataFromEsewa['unique_name'])->first();
+                if ($redeem_user) {
+                    $redeem_user->payment_response = $gatewayResponse;
+                    $redeem_user->payment_status = 'Paid';
+                
+                    DB::table('redeem_user')->where('unique_name', $dataFromEsewa['unique_name'])->update([
+                        'payment_response' => $redeem_user->payment_response,
+                        'payment_status' => $redeem_user->payment_status
+                    ]);
+                }
+                
+                $auth_user = User::where('id',auth()->id())->first();
+                reductRedeemPoints($auth_user,$redeem['reward_points']);
+                $redeem_revamp = $this->getRedeemShipping($redeem,$redeem_user->shipping_address_id,$redeem_user->shipping_configuration_id);
+                $redeem_revamp['total_price'] = $amount;
+                $redeem_controller->sendRedeemNotification($auth_user,$redeem_revamp,$dataFromEsewa['unique_name']);
+            });
+            return view('frontend.pages.redeemConfirm',compact('redeem','total_redeem_price'));
+        }
+        
+    }
+
+    public function failure($orderId)
+    {
+        
+        $order = Order::where('order_id', $orderId)->first();
+        if ($order != null) {
+            OrderProduct::where('order_id', $order->id)->delete();
+            OrderStatusHistory::where('order_id',$order->id)->delete();
+          
+            $order->delete();
+        }
+        Alert::info('Cancelled', 'Order Cancelled');
+        return redirect()->route('welcome');
+    }
+    public function failureRedeem($unique_name)
+    {
+        DB::table('redeem_user')->where('unique_name',$unique_name)->delete();
+        Alert::info('Cancelled', 'Order Cancelled');
+        return redirect()->route('welcome');
+    }
+
+
+    public function verifyPayment($merchantId, $amount, $ref_id, $order_id,$type = null,$uniqueName=null)
+    {
+        
+        if ($type == 'redeem') {
+            $redeem_user_obj = DB::table('redeem_user')->where('unique_name',$uniqueName)->first();
+            $redeem_user = get_object_vars($redeem_user_obj);
+            $total_price = $redeem_user['price'];
+            // $redeem=Redeem::where('unique_id',$order_id)->with('products')->first();
+            // $total_price = (int)$amount;
+            
+        }else {
+            $order=Order::where('order_id',$order_id)->first();
+            $total_price = $order->total_price;
+        }
+        // $url = "https://uat.esewa.com.np/epay/transrec";
+        $url = json_decode(getMerchantKeys('esewa')->merchant_keys)->TESTING_PURPOSE=="YES"?'https://uat.esewa.com.np/epay/transrec':'https://esewa.com.np/epay/transrec';
+        $data = [
+            'amt' => $total_price,
+            'rid' => $ref_id,
+            'pid' => $order_id,
+            'scd' => $merchantId
+        ];
+
+        $curl = curl_init($url);
+        curl_setopt($curl, CURLOPT_POST, true);
+        curl_setopt($curl, CURLOPT_POSTFIELDS, $data);
+        curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+        $response = curl_exec($curl);
+        curl_close($curl);
+        return $response;
+    }
+}
+
+
+crendential
+EPAYTEST

@@ -11,7 +11,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $category = Category::all();
+        $category = Category::with('media')->get();
         return response()->json([
             'categories' => $category,
 
@@ -24,7 +24,8 @@ class CategoryController extends Controller
 
         $validatedData = Validator::make($data, [
             'name' => 'required|string|unique:categories,name,',
-            'description' => 'required'
+            'description' => 'required',
+            'file'=>'required|mimes:png,jpg,jpeg|max:2048'
 
         ]);
         if ($validatedData->fails()) {
@@ -35,6 +36,7 @@ class CategoryController extends Controller
         }
         try {
             $category = Category::create($data);
+            $category->addMedia($data['file'])->toMediaCollection('category_image');
             return response()->json([
                 'categories' => $category,
                 'status' => true,
@@ -51,7 +53,7 @@ class CategoryController extends Controller
 
     public function edit($id)
     {
-        $category = Category::find($id);
+        $category = Category::with('media')->find($id);
         if($category!=null){
             return response()->json([
                 'categories' => $category,
@@ -72,7 +74,8 @@ class CategoryController extends Controller
 
         $validatedData = Validator::make($data, [
             'name' => 'required|string|unique:categories,name,'.$data['id'],
-            'description' => 'required'
+            'description' => 'required',
+            'file'=>'nullable|mimes:png,jpg,jpeg|max:2048'
 
         ]);
         if ($validatedData->fails()) {
@@ -86,6 +89,12 @@ class CategoryController extends Controller
             $category = Category::find($data['id']);
             if ($category!=null) {
                 $category->update($data);
+                if(array_key_exists('file',$data)){
+                    if($category->hasMedia('category_image')){
+                        $category->clearMediaCollection('category_image');
+                    }
+                    $category->addMedia($data['file'])->toMediaCollection('category_image');
+                }
                 return response()->json([
                     'categories' => $category,
                     'status' => true,
