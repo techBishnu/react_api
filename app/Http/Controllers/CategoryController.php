@@ -54,17 +54,21 @@ class CategoryController extends Controller
     public function edit($id)
     {
         $category = Category::with('media')->find($id);
-        if($category!=null){
-            return response()->json([
-                'categories' => $category,
-                'status'=>true
-            ]);
-        }else{
-            return response()->json([
-                'message' =>'Id not found!',
-                'status'=>false
-            ]);
-        }
+        // if($category!=null){
+        //     return response()->json([
+        //         'categories' => $category,
+        //         'status'=>true
+        //     ]);
+        // }else{
+        //     return response()->json([
+        //         'message' =>'Id not found!',
+        //         'status'=>false
+        //     ]);
+        // }
+        return response()->json([
+                    'categories' => $category,
+                    'status'=>true
+                ]);
     }
 
     public function update(Request $request)
@@ -118,11 +122,11 @@ class CategoryController extends Controller
         try {
             $category = Category::find($id);
             if ($category!=null) {
-                // $categories=Product::where('category_id',$id)->get();
-                // if(count($categories)>0){
-                //     // $categories->products()->delete();
-                //     $categories=Product::where('category_id',$id)->delete();
-                // } 
+                $categories=Product::where('category_id',$id)->get();
+                if(count($categories)>0){
+                    // $categories->products()->delete();
+                    $categories=Product::where('category_id',$id)->delete();
+                } 
                 $category->delete();
                 return response()->json([
                     'message' => 'Category deleted success',
