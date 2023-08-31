@@ -1,0 +1,228 @@
+use App\Models\Notice;
+use Illuminate\Http\Request;
+
+class NoticeController extends Controller
+{
+    public function fetchNotices(Request $request)
+    {
+        $companyId = $request->input('company_id');
+        $departmentId = $request->input('department_id');
+        $staffIds = $request->input('staff_ids');
+
+        $query = Notice::query();
+
+        if ($companyId && $departmentId && $staffIds) {
+            $query->whereHas('departments', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            })->whereHas('users', function ($query) use ($staffIds) {
+                $query->whereIn('id', $staffIds);
+            });
+        } elseif ($companyId && $departmentId) {
+            $query->whereHas('departments', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            });
+        } elseif ($staffIds) {
+            $query->whereHas('users', function ($query) use ($staffIds) {
+                $query->whereIn('id', $staffIds);
+            });
+        }
+
+        $notices = $query->get();
+
+        return response()->json(['notices' => $notices]);
+    }
+}
+
+
+
+
+
+// Company.php
+public function departments()
+{
+    return $this->hasMany(Department::class);
+}
+
+// Department.php
+public function company()
+{
+    return $this->belongsTo(Company::class);
+}
+
+public function staff()
+{
+    return $this->hasMany(Staff::class);
+}
+
+// Staff.php
+public function department()
+{
+    return $this->belongsTo(Department::class);
+}
+
+public function noticeUsers()
+{
+    return $this->hasMany(NoticeUser::class);
+}
+
+// Notice.php
+public function departments()
+{
+    return $this->belongsToMany(Department::class);
+}
+
+public function users()
+{
+    return $this->belongsToMany(User::class, 'notice_users');
+}
+
+
+
+
+
+
+
+if not noticeuser model
+
+
+use App\Models\Notice;
+use Illuminate\Http\Request;
+
+class NoticeController extends Controller
+{
+    public function fetchNotices(Request $request)
+    {
+        $companyId = $request->input('company_id');
+        $departmentId = $request->input('department_id');
+        $staffIds = $request->input('staff_ids');
+
+        $query = Notice::query();
+
+        if ($companyId && $departmentId && $staffIds) {
+            $query->whereHas('department', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            })->whereIn('user_id', $staffIds);
+        } elseif ($companyId && $departmentId) {
+            $query->whereHas('department', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            });
+        } elseif ($staffIds) {
+            $query->whereIn('user_id', $staffIds);
+        }
+
+        $notices = $query->get();
+
+        return response()->json(['notices' => $notices]);
+    }
+}
+
+
+
+
+
+
+
+create
+
+
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Notice extends Model
+{
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'notice_user', 'notice_id', 'user_id');
+    }
+
+    // ... other relationships and methods ...
+}
+
+
+namespace App\Models;
+
+use Illuminate\Foundation\Auth\User as Authenticatable;
+
+class User extends Authenticatable
+{
+    public function notices()
+    {
+        return $this->belongsToMany(Notice::class, 'notice_user', 'user_id', 'notice_id');
+    }
+
+    // ... other relationships and methods ...
+}
+
+
+use App\Models\Notice;
+use App\Models\NoticeUser;
+use Illuminate\Http\Request;
+
+class NoticeController extends Controller
+{
+    public function fetchNotices(Request $request)
+    {
+        $companyId = $request->input('company_id');
+        $departmentId = $request->input('department_id');
+        $staffIds = $request->input('staff_ids');
+
+        $query = Notice::query();
+
+        if ($companyId && $departmentId && $staffIds) {
+            $query->whereHas('department', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            })->whereIn('id', function ($subquery) use ($staffIds) {
+                $subquery->select('notice_id')
+                    ->from('notice_user')
+                    ->whereIn('user_id', $staffIds);
+            });
+        } elseif ($companyId && $departmentId) {
+            $query->whereHas('department', function ($query) use ($companyId, $departmentId) {
+                $query->where('company_id', $companyId)
+                    ->where('id', $departmentId);
+            });
+        } elseif ($staffIds) {
+            $query->whereIn('id', function ($subquery) use ($staffIds) {
+                $subquery->select('notice_id')
+                    ->from('notice_user')
+                    ->whereIn('user_id', $staffIds);
+            });
+        }
+
+        $notices = $query->get();
+
+        return response()->json(['notices' => $notices]);
+    }
+}
+
+
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class NoticeUser extends Model
+{
+    // Define the table name if needed
+    protected $table = 'notice_user';
+
+    // Define any additional attributes
+    protected $fillable = [
+        'extra_attribute',
+    ];
+
+    // Define methods if needed
+    public function someMethod()
+    {
+        // ...
+    }
+
+    // ... other attributes and methods ...
+}
