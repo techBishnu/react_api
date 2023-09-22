@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Category;
 use Spatie\MediaLibrary\HasMedia;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -17,4 +18,8 @@ class Product extends Model implements HasMedia
         'price',
         'quantity',
     ];
+
+    public function category(){
+        return $this->belongsTo(Category::class);
+    }
 }

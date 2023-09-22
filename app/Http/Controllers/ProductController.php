@@ -10,7 +10,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $product = Product::all();
+        $product = Product::with('media','category')->get();
         return response()->json([
             'products' => $product,
 
@@ -80,7 +80,7 @@ class ProductController extends Controller
     public function update(Request $request)
     {
         $data = $request->all();
-        // dd($data);
+        
         if(!array_key_exists('id',$data)){
             return response()->json([
                 'status' => false,

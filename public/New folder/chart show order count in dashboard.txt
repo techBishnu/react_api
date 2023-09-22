@@ -1,0 +1,191 @@
+chart show in dashboard
+
+blade..
+ <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <div class="row mb-2 text-dark">
+                    <div class="col-lg-12">
+                        <div class="row mb-2">
+                            <div class="col">
+                                <div class="welcome-text">
+                                    <h4>This Month Order [{{ now()->format('F') }}]</h4>
+                                    <p id="order_count"></p>
+                                </div>
+                            </div>
+
+
+                            <div class="col">
+                                <select class="form-control" id="type" onchange="makeChart(false)">
+                                    <option value="bar">Bar</option>
+                                    <option value="line">Line</option>
+                                    <option value="pie">Pie</option>
+                                    <option value="doughnut">Doughnut</option>
+                                    <option value="polarArea">Polar Area</option>
+                                    <option value="radar">Radar</option>
+                                </select>
+                            </div>
+
+
+                        </div>
+                    </div>
+                    <div class="col-lg-12 mt-5" id="salesChartBox">
+                        <canvas id="salesChart">
+
+                        </canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+script
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let salesChartType = 'bar';
+    let all = 'Yearly';
+    let year = '';
+    let month = '';
+   
+    window.addEventListener('load', function () {
+    
+        makeChart(true);
+        makeChart1(true);
+
+    })
+
+
+    function makeChart(first) {
+
+
+        if (first == false) {
+            salesChartType = $('#type').val();
+            // all = $('#all').val();
+            // year = $('#year').val();
+            // month = $('#month').val();
+           
+        }
+        let typeshow='order';
+
+        $.ajax({
+            url: "{{route('dashboard.dashboard-chart.getDailyOrders')}}",
+            type: "POST",
+            data: {
+                _token: "{{csrf_token()}}",
+                type: salesChartType,
+                typeshow:typeshow
+                // all: all,
+                // year: year,
+                // month: month
+            },
+            success: function (response) {
+                debugger
+                if (response.status == true) {
+                    $('#salesChart').remove();
+                    $('#salesChartBox').empty();
+                    if (response.data.chart == true) {
+                        $('#salesChartBox').append('<canvas id="salesChart"></canvas>');
+                        const ctx = document.getElementById('salesChart');
+
+                        new Chart(ctx, {
+                            type: response.data.type,
+                            data: {
+                                labels: response.data.labels,
+                                datasets: [{
+                                    label: response.data.title,
+                                    data: response.data.values,
+                                    borderWidth: 1,
+                                    borderColor: '#A47261',
+                                    backgroundColor: response.data.colors,
+                                }]
+                            },
+                            options: {
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    
+                    } else {
+                        $('#salesChartBox').append(
+                            '<p class="text-center">No sufficient data to create chart</p>')
+                    }
+                    $('#order_count').text(` Total order: ${response.order_count}`);
+                }
+            },
+            error: function (error) {
+
+            }
+        })
+
+    }
+<script>
+
+
+controller 
+
+public function getDailyOrders(Request $request)
+    {
+        $data = $request->all();
+        $count_order='';
+        $count_sell='';
+        // dd($data);
+        $res['type'] = $data['type'];
+        $res['values'] = [];
+        $res['labels'] = [];
+        // $res['title'] = array_key_exists('order',$data) ? "Daily Orders":'Daily Sales';
+        $res['colors'] = ($data['type'] == 'line' || $data['type'] == 'radar') ? '' : ['#4DDE1B', '#A47261', '#A2C3DB', '#8871A0', '#8AAF22', '#DCB12D', '#3F9F9F', '#000000', '#0000FF', '#808080', '#008000', '#800080', '#FF0000', '#F0F8FF', '#FF7F50', '#B22222', '#FF69B4', '#FFFACD', '#4DDE1B', '#A47261', '#A2C3DB', '#8871A0', '#8AAF22', '#DCB12D', '#3F9F9F', '#000000', '#0000FF', '#808080', '#008000', '#800080', '#FF0000', '#F0F8FF', '#FF7F50'];
+
+
+        $year = (string)now()->year;
+        $month = (string)now()->month;
+
+        $d1 = date_create($year . '-' . $month . '-01'); //current month/year
+        $d2 = date_create($d1->format('Y-m-t')); //get last date of the month
+
+        $days = date_diff($d1, $d2)->days + 1;
+       
+            $res['title'] =  "Daily Orders";
+            
+            $count_order = Order::whereYear('created_at', $year)->whereMonth('created_at', $month)->count();
+            // dd($days);
+
+            for ($j = 1; $j <= $days; $j++) {
+                $ord = Order::whereYear('created_at', $year)->whereMonth('created_at', $month)->whereDay('created_at', $j)->count();
+
+                array_push($res['values'], $ord);
+                array_push($res['labels'], $j);
+            }
+        
+      
+
+
+        $allZeros = $this->allZeros($res['values']);
+
+        if ($allZeros == true) {
+            $res['chart'] = false;
+        } else {
+            $res['chart'] = true;
+        }
+
+
+
+
+
+
+        return response()->json(['data' => $res, 'status' => true, 'order_count' => $count_order,'count_sell'=>$count_sell]);
+    }
+    public function allZeros($arr)
+    {
+        foreach ($arr as $v) {
+            if ($v != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+

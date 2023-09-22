@@ -54,17 +54,7 @@ class CategoryController extends Controller
     public function edit($id)
     {
         $category = Category::with('media')->find($id);
-        // if($category!=null){
-        //     return response()->json([
-        //         'categories' => $category,
-        //         'status'=>true
-        //     ]);
-        // }else{
-        //     return response()->json([
-        //         'message' =>'Id not found!',
-        //         'status'=>false
-        //     ]);
-        // }
+       
         return response()->json([
                     'categories' => $category,
                     'status'=>true

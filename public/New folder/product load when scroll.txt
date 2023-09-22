@@ -1,0 +1,127 @@
+load product when scroll
+
+
+<script>
+    window.addEventListener('load',function(){
+
+        $('#filter_spinner').hide();
+        let limit = 8;
+        let page = 1;
+        let scrolled = false;
+
+
+
+        function loadShopProductData(limit, page) {
+            $('#filter_spinner').show();
+            if (limit > 24) {
+                limit = 24;
+            }
+           
+            $.ajax({
+                url: "{{ route('dashboard.dashboard-chart.loadThisMonthProductData') }}",
+                method: "POST",
+                data: {
+                    limit: limit,
+                    page: page,
+                    _token: "{{ csrf_token() }}",
+                    
+                },
+                cache: false,
+                success: function(data) {
+                    $('#filter_spinner').hide();
+                    $('#shop_load_data_div').append(data);
+                    if (data == '') {
+
+                        scrolled = true;
+                    } else {
+
+                        scrolled = false;
+                    }
+                }
+            });
+        }
+        
+        if (scrolled == false) {
+            scrolled = true;
+            loadShopProductData(limit, page);
+        }
+        $('#contentBox').scroll(function() {
+            let scrollop=$(window).scrollTop();
+            let winHeight=$(window).height();
+            let divHeight=$("#shop_load_data_div").height() 
+            if ( scrolled ==
+                false) {
+                scrolled = true;
+                page = page + 1;
+
+                setTimeout(function() {
+                    loadShopProductData(limit, page);
+                }, 1000);
+            }
+            // if (scrollop + winHeight >divHeight && scrolled ==
+            //     false) {
+            //     scrolled = true;
+            //     page = page + 1;
+
+            //     setTimeout(function() {
+            //         loadShopProductData(limit, page);
+            //     }, 1000);
+            // }
+        });
+
+    })
+
+
+
+</script>
+
+
+blade.
+
+  <div style="height:200vh">
+            <div class="row mt-3 "  id="shop_load_data_div">
+
+     
+        </div>
+    </div>
+    <div class="row mb-3">
+        <div class="col-lg-12  d-flex justify-content-center">
+            <img id="filter_spinner" width="60" src="{{ asset('frontend/spinner/filter_spinner.gif') }}" alt="">
+        </div>
+    </div>
+
+
+controller
+
+  public function loadThisMonthProductData(Request $request){
+        $data = $request->all();
+       
+        $offset = ($data['page'] - 1) * $data['limit'];
+        $year = (string)now()->year;
+        $month = (string)now()->month;
+        $products= OrderProduct::select('product_id', 'product_title', 'product_thumbnail_src')->groupBy('product_id', 'product_title', 'product_thumbnail_src')->whereYear('created_at', $year)->whereMonth('created_at', $month)->limit($data['limit'])->offset($offset)->with('product')->get()->pluck('product');
+        
+        return view('backend.components.loadThisMonthProductData', compact('products'));
+    }
+
+
+render blade.
+
+@foreach ($products as $product)
+@if($product)
+<div class="col-md-3">
+    <div class="card product_image_month">
+        <a href="{{ route('productDetail',$product->slug) }}">
+            <img class="" height="200" width="200" src="{{ $product->hasMedia('product_thumbnail')?$product->getMedia('product_thumbnail')[0]->getFullUrl():'' }}" alt="Card image cap">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <h5> {{ $product->title }}</h5>
+
+                </h5>
+
+            </div>
+        </a>
+    </div>
+</div>
+@endif
+@endforeach
