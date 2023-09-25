@@ -1,0 +1,76 @@
+
+<div class="container">
+  <div class="row mt-5 mb-5" id="coupon_data_list">
+   
+</div>
+<div class="d-flex justify-content-center">
+  <button type="button" onclick="handlePrevCoupondata()" id="prevButton" class="btn btnCSS m-2">Previous</button>
+  <button type="button" onclick="handleNextCoupondata()" id="nextButton" class="btn btnCSS m-2">Next</button>
+</div>
+
+</div>
+</div>
+
+script
+
+<script>
+  let url="{{ route('coupanDataList') }}";
+    let Nexturl="";
+    let Prevurl="";
+    window.addEventListener('load',function(){
+      getCouponData(url)
+    })
+
+    function getCouponData(url){
+      $.ajax({
+        type: "get",
+        url: url,
+        success: function (response) {
+          $('#coupon_data_list').html(response.data);
+          Prevurl=response.prev;
+          Nexturl=response.next;
+          if(response.next==null && response.prev==null){
+
+            $('#nextButton').hide();
+            $('#prevButton').hide();
+          }
+          if(response.next=="" || response.next==null || response.next==undefined){
+            $('#nextButton').attr('disabled',true);
+          }else{
+            $('#nextButton').attr('disabled',false);
+
+            }
+          if(response.prev=="" || response.prev==null || response.prev==undefined){
+            $('#prevButton').attr('disabled',true);
+          }else{
+            $('#prevButton').attr('disabled',false);
+
+            }
+        }
+      });
+    }
+
+    function handlePrevCoupondata(){
+      getCouponData(Prevurl);
+    }
+    function handleNextCoupondata(){
+      getCouponData(Nexturl);
+    }
+  
+</script>
+
+controller
+
+   public function coupanDataList()
+    {
+        $getValidCoupons =  getUserAllCollectedCoupon();
+        $userCoupon=DB::table('coupon_code_applied')->where('user_id',Auth::id())->get();
+        return response()->json([
+            'data'=>view('frontend.component.couponDataList',compact('getValidCoupons','userCoupon'))->render(),
+            'next'=>$getValidCoupons->nextPageUrl(),
+            'prev'=>$getValidCoupons->previousPageUrl()
+
+        ]);
+    }
+
+
