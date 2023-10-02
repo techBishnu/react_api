@@ -1,0 +1,21 @@
+script 
+
+
+ window.addEventListener('load', function () {
+        $('#role-data-table').DataTable({
+            "ordering": true,
+            "order": [],
+            "info": false,
+            "processing": true,
+            "paging": false,
+            columnDefs: [{
+                orderable: false,
+                targets: "no-sort-role"
+            }]
+
+        });
+        });
+
+table id=role-data-table
+
+cdn link
