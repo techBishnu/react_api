@@ -1,0 +1,4 @@
+create blade view without controller 
+
+
+Route::view('url','blade path');
