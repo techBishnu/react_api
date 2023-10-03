@@ -1,0 +1,23 @@
+Str contains and replace 
+
+ $name = str_replace('k kura ma ', 'k add garne', $string);
+
+$contains = str_contains($string, 'test');
+
+
+name and space allowed only
+in js
+
+ function onlyLettersAndSpaces(str) {
+        return /^[A-Za-z\s]*$/.test(str);
+    }
+
+ if(onlyLettersAndSpaces(name.val())){
+       true
+}
+
+in laravel
+ 'name' => ['required','regex:/^[a-zA-Z ]*$/'],
+            
+
+
