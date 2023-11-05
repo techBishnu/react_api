@@ -1,0 +1,29 @@
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
+class YourModel implements HasMedia
+{
+    public function registerMediaConversions(Media $media = null): void
+    {
+        // Original image
+        $this->addMediaConversion('original')
+            ->keepOriginalImageFormat();
+
+        // Thumbnail
+        $this->addMediaConversion('thumbnail')
+            ->width(100)
+            ->height(100)
+            ->sharpen(10);
+
+        // Compressed version
+        $this->addMediaConversion('compressed')
+            ->width(800)
+            ->quality(80); // Adjust quality to control compression level
+    }
+}
+
+
+blade.
+
+$compressedImage = $yourModel->getMedia('compressed');
+$thumbnail = $yourModel->getMedia('thumbnail');
