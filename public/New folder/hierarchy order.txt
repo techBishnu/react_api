@@ -1,0 +1,65 @@
+public function update(Request $request, $id)
+{
+    $request->validate([
+        'hierarchy_order' => 'required|integer',
+        // ... other validations
+    ]);
+
+    $product = Product::findOrFail($id);
+    $categoryId = $product->category_id;
+    $newOrder = $request->input('hierarchy_order');
+
+    // Check if the new order already exists for the category
+    $existingProduct = Product::where('category_id', $categoryId)
+        ->where('hierarchy_order', $newOrder)
+        ->first();
+
+    if ($existingProduct) {
+        // If it exists, adjust the hierarchy order values
+        $this->adjustHierarchyOrder($categoryId, $product->hierarchy_order, $newOrder);
+    } else {
+        // If it doesn't exist, update the product
+        $product->update($request->all());
+    }
+
+    return redirect()->route('products.index')
+        ->with('success', 'Product updated successfully');
+}
+
+private function adjustHierarchyOrder($categoryId, $currentOrder, $newOrder)
+{
+    // Increment or decrement the hierarchy_order for products in the same category
+    // based on whether the new order is greater or less than the current order.
+    // Ensure that the updated order remains unique within the category.
+
+    if ($newOrder > $currentOrder) {
+        Product::where('category_id', $categoryId)
+            ->where('hierarchy_order', '>', $currentOrder)
+            ->where('hierarchy_order', '<=', $newOrder)
+            ->decrement('hierarchy_order');
+    } elseif ($newOrder < $currentOrder) {
+        Product::where('category_id', $categoryId)
+            ->where('hierarchy_order', '>=', $newOrder)
+            ->where('hierarchy_order', '<', $currentOrder)
+            ->increment('hierarchy_order');
+    }
+}
+
+
+
+private function adjustHierarchyOrder($categoryId, $currentOrder, $newOrder)
+{
+    // If the new order is less than the current order, decrement the products in between
+    if ($newOrder < $currentOrder) {
+        Product::where('category_id', $categoryId)
+            ->where('hierarchy_order', '>=', $newOrder)
+            ->where('hierarchy_order', '<', $currentOrder)
+            ->increment('hierarchy_order');
+    } elseif ($newOrder > $currentOrder) {
+        // If the new order is greater than the current order, increment the products in between
+        Product::where('category_id', $categoryId)
+            ->where('hierarchy_order', '>', $currentOrder)
+            ->where('hierarchy_order', '<=', $newOrder)
+            ->decrement('hierarchy_order');
+    }
+}
