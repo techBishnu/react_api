@@ -1,0 +1,68 @@
+php artisan make:rule OrganizationAndContactValidationRule
+
+
+// App/Rules/OrganizationAndContactValidationRule.php
+
+namespace App\Rules;
+
+use Illuminate\Contracts\Validation\Rule;
+
+class OrganizationAndContactValidationRule implements Rule
+{
+    public function passes($attribute, $value)
+    {
+        $organizationName = request('organization_name');
+        $contactName = request('contact_name');
+
+        // If both are empty, all fields are required
+        if (empty($organizationName) && empty($contactName)) {
+            return false;
+        }
+
+        // If organization name is provided, validate organization fields
+        if (!empty($organizationName)) {
+            return request()->validate([
+                'organization_name' => 'required',
+                'organization_email' => 'required|email',
+                'organization_address' => 'required',
+                'organization_contact' => 'required',
+            ]);
+        }
+
+        // If contact name is provided, validate contact fields
+        if (!empty($contactName)) {
+            return request()->validate([
+                'contact_name' => 'required',
+                'contact_email' => 'required|email',
+                'contact_address' => 'required',
+                'contact_contact' => 'required',
+            ]);
+        }
+
+        return false; // Should not reach here, but return false to be safe
+    }
+
+    public function message()
+    {
+        return 'Validation failed.';
+    }
+}
+
+
+use App\Rules\OrganizationAndContactValidationRule;
+
+// ...
+
+public function yourControllerMethod(Request $request)
+{
+    $request->validate([
+        'organization_name' => ['nullable', new OrganizationAndContactValidationRule],
+        'contact_name' => ['nullable', new OrganizationAndContactValidationRule],
+    ]);
+
+    // Your other logic here
+}
+
+ if ((empty($organizationName) && empty($contactName)) || (!empty($organizationName) && !empty($contactName))) {
+            return true;
+        }
