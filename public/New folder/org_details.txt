@@ -1,0 +1,60 @@
+public function customerDetails($id)
+{
+    $company = Company::findOrFail(auth()->user()->company_id);
+    $lead = Lead::with('settings', 'organization', 'creator', 'activities')->findOrFail($id);
+    $data = $this->getDataForLead($lead);
+
+    return view('backend.customer.details', compact('lead', 'data', 'company'));
+}
+
+private function getDataForLead($lead)
+{
+    $data = [
+        'contact_numbers' => [],
+        'contact_emails' => [],
+        'og_contacts' => [],
+        'organization_numbers' => [],
+        'organization_emails' => [],
+        'organization_address' => [],
+    ];
+
+    if ($lead->contact_id !== null) {
+        $data['contact'] = Contact::with('organization')->findOrFail($lead->contact_id);
+        $data['contact_numbers'] = $data['contact']->phones->pluck('phone_number')->toArray();
+        $data['contact_emails'] = $data['contact']->emails->pluck('email')->toArray();
+
+        $data['organization'] = $data['contact']->organization;
+        $data['og_contacts'] = $data['organization']->contacts;
+
+        foreach ($data['og_contacts'] as $contact) {
+            $data['org_contact_numbers'] = $contact->phones->pluck('phone_number')->toArray();
+            $data['org_contact_emails'] = $contact->emails->pluck('email')->toArray();
+            $contact->phones = $data['org_contact_numbers'];
+            $contact->emails = $data['org_contact_emails'];
+        }
+
+        $data['organization_numbers'] = $data['organization']->numbers->pluck('contact_number')->toArray();
+        $data['organization_emails'] = $data['organization']->emails->pluck('email')->toArray();
+        $data['organization_address'] = $data['organization']->address->pluck('address')->toArray();
+    } elseif ($lead->organization_id !== null) {
+        $data['organization'] = Organization::with('contacts', 'numbers', 'emails', 'address')->findOrFail($lead->organization_id);
+        $data['og_contacts'] = $data['organization']->contacts;
+
+        foreach ($data['og_contacts'] as $contact) {
+            if ($contact->is_primary) {
+                $data['contact'] = $contact;
+            }
+
+            $data['org_contact_numbers'] = $contact->phones->pluck('phone_number')->toArray();
+            $data['org_contact_emails'] = $contact->emails->pluck('email')->toArray();
+            $contact->phones = $data['org_contact_numbers'];
+            $contact->emails = $data['org_contact_emails'];
+        }
+
+        $data['organization_numbers'] = $data['organization']->numbers->pluck('contact_number')->toArray();
+        $data['organization_emails'] = $data['organization']->emails->pluck('email')->toArray();
+        $data['organization_address'] = $data['organization']->address->pluck('address')->toArray();
+    }
+
+    return $data;
+}
