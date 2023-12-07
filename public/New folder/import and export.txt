@@ -1,0 +1,95 @@
+// YourController.php
+
+use App\Imports\ContactsAndOrganizationsImport;
+use Maatwebsite\Excel\Facades\Excel;
+
+class YourController extends Controller
+{
+    public function importContactsAndOrganizations()
+    {
+        Excel::import(new ContactsAndOrganizationsImport, 'contacts_and_organizations_sample.xlsx');
+
+        return 'Contacts and Organizations imported successfully!';
+    }
+}
+
+
+// ContactsAndOrganizationsImport.php
+
+namespace App\Imports;
+
+use App\Models\Contact;
+use App\Models\Organization;
+use Illuminate\Support\Facades\Validator;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\SkipsOnError;
+use Maatwebsite\Excel\Concerns\SkipsErrors;
+use Throwable;
+
+class ContactsAndOrganizationsImport implements ToModel, WithHeadingRow, SkipsOnError
+{
+    use SkipsErrors;
+
+    public function model(array $row)
+    {
+        $validator = Validator::make($row, [
+            'contact_name' => 'required',
+            'organization_name' => 'required',
+            // Add other validation rules as needed
+        ]);
+
+        if ($validator->fails()) {
+            // Log the validation errors if needed
+            return null;
+        }
+
+        // Assuming you have a one-to-many relationship between Organization and Contact
+        $organization = Organization::create([
+            'name' => $row['organization_name'],
+            // Add other fields as needed
+        ]);
+
+        $contact = new Contact([
+            'name' => $row['contact_name'],
+            'additional_field' => $row['additional_field'],
+            // Add other fields as needed
+        ]);
+
+        // Associate the contact with the organization
+        $organization->contacts()->save($contact);
+
+        return $contact;
+    }
+}
+
+
+skip 
+
+
+// ContactsImport.php
+
+namespace App\Imports;
+
+use App\Models\Contact;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
+class ContactsImport implements ToModel, WithHeadingRow
+{
+    public function model(array $row)
+    {
+        // Your import logic here
+        return new Contact([
+            'name' => $row['name'],
+            'additional_field' => $row['additional_field'],
+            'organization_id' => $row['organization_id'],
+            // Add other fields as needed
+        ]);
+    }
+
+    public function headingRow(): int
+    {
+        return 3; // Skip the first 2 rows (assuming your header is on the third row)
+    }
+}
