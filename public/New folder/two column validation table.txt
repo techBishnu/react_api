@@ -1,0 +1,13 @@
+// Validation for store method
+$request->validate([
+    'name' => 'required|unique:organizations,name,NULL,id,company_id,' . $request->company_id,
+    'company_id' => 'required|exists:companies,id',
+    // Other validation rules...
+]);
+
+// Validation for update method
+$request->validate([
+    'name' => 'required|unique:organizations,name,' . $organization->id . ',id,company_id,' . $request->company_id,
+    'company_id' => 'required|exists:companies,id',
+    // Other validation rules...
+]);
