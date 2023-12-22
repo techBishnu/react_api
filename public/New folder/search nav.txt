@@ -1,0 +1,83 @@
+  <script>
+         function searchMenu(){
+        $('#menu_search_box_content').empty();
+        let searchData=event.target.value.trim().toLowerCase();
+        if(searchData!="" && searchData!=null && searchData!=undefined){
+            $('#menu_search_box').show();
+            let allAnchorTags=$('#menu').find('a');
+            let name="";
+            let url="";
+            let results=[];
+           
+                allAnchorTags.each(function(index,item){
+                name=item.text;
+                url=item.href;
+                if(name.toLowerCase().includes(searchData) && url!="" && url!=null && url!=undefined && url!="javascript:void(0)"){
+                    results.push({
+                        name:name,
+                        url:url
+                    })
+                    $('#menu_search_box_content').append(`<div class="p-2"><a  target="_blank" class="c-pointer text-dark" href="${url}">${name.trim()}&nbsp;&nbsp;&nbsp;<i
+                                                        class="fa fa-arrow-up-right-from-square c-pointer"></i></a></div>`);
+                }
+            })
+           
+                if(results.length<=0){
+                    $('#menu_search_box_content').append(`<p class="text-dark text-center">No Data Found...</p>`);
+                }
+        }else{
+            $('#menu_search_box').hide();
+        }
+
+       
+    }
+    </script>
+
+
+
+<style>
+    #menu_search_box_content {
+        max-height: 400px;
+        overflow-x: hidden;
+
+    }
+
+    #menu_search_box {
+        position: fixed;
+        z-index: 1000;
+        top: 12%;
+        left: 14%;
+        border: 1px solid #eaeaea;
+        height: 450px;
+        width: 400px !important;
+        padding: 10px;
+        border-radius: 8px;
+        background-color: white;
+        display: none;
+        box-shadow: 20px 20px 50px 10px #eaeaea inset;
+        box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
+    }
+
+    #menu_search_box_content {
+        max-height: 400px;
+        overflow-x: hidden;
+
+    }
+</style>
+
+
+ <input type="text" onkeyup="searchMenu()" class="form-control" placeholder="Search menu" id="menu_search">
+
+
+<div id="menu_search_box" class="pr-2 pt-1">
+        <div class="d-flex justify-content-between">
+            <h5 class="mt-2">Search Results...</h5>
+            <i class="text-danger fa fa-close c-pointer" style="font-size: larger;"
+                onclick="$('#menu_search_box').hide()"></i>
+        </div>
+        <div id="menu_search_box_content" class="p-3">
+
+
+        </div>
+
+    </div>
