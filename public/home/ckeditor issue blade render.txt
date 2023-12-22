@@ -1,0 +1,39 @@
+<script src="//cdn.ckeditor.com/4.14.0/standard/ckeditor.js"></script>
+<script>
+window.addEventListener('load',function(){
+    @include('backend.js.ckEditorInit');
+});   
+</script>
+
+
+
+$(".ckeditor").each(function () {
+    let id = $(this).attr('id');
+    CKEDITOR.replace(id);
+});
+
+
+
+
+@switch($type)
+    @case('page edit')
+        @include('backend.page.js.jsEditPage');
+        @break
+    @case('page create')
+        @include('backend.page.js.jsCreatePage');
+        @break
+    @case('category create')
+        @include('backend.category.js.jsCreateCategory');
+        @break
+    @case('category edit')
+        @include('backend.category.js.jsEditCategory');
+        @break
+    @case('product')
+        @include('backend.products.js.jsCreateOrEditProduct');
+        @break
+    @case('webConfig')
+        @include('backend.web_config.js.jsCreateOrEditWeb');
+        @break
+    @default
+        
+@endswitch
