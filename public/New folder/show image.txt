@@ -1,0 +1,26 @@
+show image
+
+script
+function showImage(id) {
+    var file = event.target.files[0];
+    $("#" + id).empty();
+
+    if (file) {
+        let reader = new FileReader();
+        reader.onload = function (e) {
+            $("#" + id).append(
+                '<img src="' + e.target.result + '" width="100" />'
+            );
+        };
+        reader.readAsDataURL(file);
+    } else {
+        $("#" + id).empty();
+    }
+}
+
+blade
+ <input type="file" class="form-control"
+ onchange="showImage('img-box')" name="meta_img" id="meta_img">
+   <div id="img-box">
+
+    </div>
