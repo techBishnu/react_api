@@ -1,11 +1,28 @@
 Certainly! Here's a simple example of handling a checkout event in a Laravel application for local testing with Facebook Conversion API. We'll assume you have already set up a Facebook App, obtained the access token, and configured the .env file.
 
+
+
 Step 1: Install Required Packages
 bash
 Copy code
 composer require facebook/graph-sdk facebook/facebook-business-sdk
 Step 2: Create a Controller
 Generate a controller for handling checkout events:
+
+
+// config/services.php
+
+return [
+    // Other services...
+
+    'facebook' => [
+        'app_id' => env('FACEBOOK_APP_ID'),
+        'app_secret' => env('FACEBOOK_APP_SECRET'),
+        'access_token' => env('FACEBOOK_ACCESS_TOKEN'),
+        'pixel_id' => env('FACEBOOK_PIXEL_ID'),
+    ],
+];
+
 
 bash
 Copy code
