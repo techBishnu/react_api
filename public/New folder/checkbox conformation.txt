@@ -1,23 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Checkbox Event with SweetAlert</title>
-
-  <!-- Include SweetAlert2 CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@10/dist/sweetalert2.min.css">
-
-</head>
-<body>
-
-  <h2>Checkbox Event with SweetAlert</h2>
-
-  <input type="checkbox" id="myCheckbox"> Check me
-
-  <!-- Include SweetAlert2 JS -->
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@10"></script>
-  <script>
+ <script>
     var checkbox = document.getElementById('myCheckbox');
 
     checkbox.addEventListener('change', function() {
@@ -68,6 +49,3 @@
       }
     });
   </script>
-
-</body>
-</html>
