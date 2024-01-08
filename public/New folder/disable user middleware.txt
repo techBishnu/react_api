@@ -1,0 +1,36 @@
+// app/Http/Middleware/DisableUserAccess.php
+
+namespace App\Http\Middleware;
+
+use Closure;
+
+class DisableUserAccess
+{
+    public function handle($request, Closure $next)
+    {
+        // Check if the user should be disabled from accessing URLs
+        if (auth()->check() && auth()->user()->is_disabled) {
+            return response('Access Denied. Your account is disabled.', 403);
+        }
+
+        return $next($request);
+    }
+}
+
+
+// app/Http/Kernel.php
+
+protected $routeMiddleware = [
+    // Other middleware entries...
+
+    'disable.user' => \App\Http\Middleware\DisableUserAccess::class,
+];
+
+
+// routes/web.php
+
+Route::group(['middleware' => 'disable.user'], function () {
+    // Define your routes here
+    Route::get('/dashboard', 'DashboardController@index');
+    // Add other routes that should be protected
+});
