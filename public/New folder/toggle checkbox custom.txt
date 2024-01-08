@@ -1,0 +1,53 @@
+ .toggle-switch {
+        position: relative;
+        width: 30px; /* Adjusted width */
+        height: 15px; /* Adjusted height */
+        cursor: pointer;
+      }
+      
+      .toggle-input {
+        display: none;
+      }
+      
+      .toggle-label {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ccc;
+        border-radius: 8px; /* Adjusted border-radius */
+        transition: background-color 0.3s;
+      }
+      
+      .toggle-input:checked + .toggle-label {
+        background-color: #4CAF50;
+      }
+      
+      .toggle-slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 15px; /* Adjusted width */
+        height: 15px; /* Adjusted height */
+        background-color: #fff;
+        border-radius: 50%;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        transition: transform 0.3s;
+      }
+      
+      .toggle-input:checked + .toggle-label + .toggle-slider {
+        transform: translateX(15px); /* Adjusted translation */
+      }
+
+
+<div class="toggle-switch" onclick="toggleSwitch()">
+    <input type="checkbox" id="customSwitch" class="toggle-input">
+    <label for="customSwitch" class="toggle-label"></label>
+    <div class="toggle-slider"></div>
+  </div>
+
+ function toggleSwitch() {
+        var checkbox = document.getElementById("customSwitch");
+        checkbox.checked = !checkbox.checked;
+      }
