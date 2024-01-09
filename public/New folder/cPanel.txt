@@ -1,3 +1,58 @@
+use Maatwebsite\Excel\Concerns\OnEachRow;
+use Maatwebsite\Excel\Row;
+use App\Models\User;
+use App\Models\Organization;
+use App\Models\Contact;
+use Illuminate\Support\Facades\DB;
+
+class YourImportClass implements OnEachRow
+{
+    // ... (existing methods)
+
+    public function onRow(Row $row)
+    {
+        // Get the raw data from the row
+        $rowData = $row->toArray();
+
+        // Your existing logic for extracting and processing data
+        // ...
+
+        // Validation for 'Contact Person Name,' 'Contact Email,' and 'Contact Phone Number'
+        $contactName = $rowData[2] ?? null;
+        $contactEmail = $rowData[3] ?? null;
+        $contactPhoneNumber = $rowData[4] ?? null;
+
+        if (empty($contactName)) {
+            // Handle validation failure for 'Contact Person Name' (required)
+            $this->validationErrors[] = 'Contact Person Name is required for row ' . $row->getIndex();
+        } else {
+            // 'Contact Person Name' is provided, check for 'Contact Email' and 'Contact Phone Number'
+            if (empty($contactEmail)) {
+                // Handle validation failure for 'Contact Email' (required when 'Contact Person Name' is provided)
+                $this->validationErrors[] = 'Contact Email is required when Contact Person Name is provided for row ' . $row->getIndex();
+            }
+
+            if (empty($contactPhoneNumber)) {
+                // Handle validation failure for 'Contact Phone Number' (required when 'Contact Person Name' is provided)
+                $this->validationErrors[] = 'Contact Phone Number is required when Contact Person Name is provided for row ' . $row->getIndex();
+            }
+        }
+
+        // Continue with your existing logic for other validations and data processing
+        // ...
+    }
+
+    // ... (existing methods)
+}
+
+
+
+
+
+
+
+
+
 1. cPanel
 Creation of databases,
 Associating users with database and  specific permissions for it,
