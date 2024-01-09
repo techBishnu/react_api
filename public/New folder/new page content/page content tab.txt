@@ -1,0 +1,124 @@
+   function removePageSubContent(pageContentId){
+        let btn=event.target.parentElement.parentElement.parentElement;
+        btn.remove();
+        $('#activeLiTabContent'+pageContentId).remove();
+
+    }
+
+
+
+ function addPageContent(){
+       
+
+        $('#pageContentdDivtab').append(`
+        <li class="activeLiTabContent${pageCount} m-2 border p-2" id="activeLiTabContent${pageCount}">
+            <a id="pageContentATag${pageCount}" class="removeColor pageContentATag" data-toggle="tab" 
+                onclick="pageContentClick(${pageCount})" href="#pageContentNew${pageCount}">
+                Page Content Item ${pageCount + 1}
+            </a>
+        </li>
+    `);
+
+    $('#pageContenttabDetail').append(`
+        <div id="pageContentNew${pageCount}" class="tab-pane fade in pageContentShowNow">
+             <div class="row border border-secondary rounded p-2 my-1" id=pagecontentMainDiv${pageCount}>
+                        <div class="col-md-12">
+                            <a onclick="removePageSubContent(${pageCount})"
+                                class=" btn btn-danger btn-sm float-right my-1"> <i class="fa-solid fa-minus text-white"></i></a>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="col-form-label">Title<sup
+                                    class="text-danger">*</sup></label>
+                            <div class="">
+                                <input type="text" class="form-control"
+                                    name="pagecontent[${pageCount}][title]" id="title" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6 ">
+                            <label class="col-form-label">Icon Class</label>
+                            <div class="">
+                                <input type="text" name="pagecontent[${pageCount}][icon_class]"
+                                    class="form-control"
+                                    placeholder="Enter the icon class Eg: fa-book ">
+                                <p class="">
+                                    <strong> <a
+                                            href="https://fontawesome.com/search?q=edit&o=r"
+                                            target="_blank">Click here for Icon
+                                            class sample</a></strong>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-12 ">
+                            <label class="col-form-label">Description</label>
+                            <div class="">
+                                <textarea name="pagecontent[${pageCount}][description]"
+                                    class=" form-control ckeditor" id="description${pageCount}"
+                                    cols="30" rows="10"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="col-form-label">Image</label>
+                            <div class="">
+                                <small style="font-size:11px"><strong>[ Only
+                                        accepts jpg, jpeg and png; file size
+                                        less then 4MB ]</strong></small>
+    
+                                <input type="file" name="pagecontent[${pageCount}][img]"
+                                    class="form-control">
+                            </div>
+                        </div>
+                            <div class="col-md-12 my-1">
+                                <a onclick="addPageSubContent(${pageCount})"
+                                    class="btn btn-primary btn-sm float-right text-white">Add Page Sub Content</a>
+                            </div>
+
+
+
+                        <ul class="nav nav-tabs" id="pageContentdDivtab${pageCount}">
+                               
+                        </ul>
+                            
+                        <div class="tab-content" id="pageContenttabDetail${pageCount}" >
+                          
+                        </div>
+                    </div> 
+            </div>
+        </div>
+    `);
+
+    $('.pageContentShowNow').removeClass('active');
+    $('.activeLiTabContent' + pageCount).removeClass('active');
+    $('#pageContentNew' + pageCount).addClass('active');
+    $('#activeLiTabContent' + pageCount).addClass('active');
+    $('#pageContentATag' + pageCount).click();
+    $('.pageContentATag').removeClass('liTabNav');
+    $('#pageContentATag' + pageCount).addClass('liTabNav');
+
+
+    @include('backend.pages.js.ckEditorInit');
+    pageCount++;
+    }
+
+
+
+
+
+                                                        <ul class="nav nav-tabs" id="pageContentdDivtab">
+                               
+                                                        </ul>
+                                                            
+                                                        <div class="tab-content" id="pageContenttabDetail" >
+                                                        
+                                                        </div>
+
+
+
+
+for ckeditor issue  
+$(".ckeditor").each(function () {
+    let id = $(this).attr('id');
+    if (CKEDITOR.instances[id]) {
+         CKEDITOR.instances[id].destroy();
+    }
+    CKEDITOR.replace(id);
+});

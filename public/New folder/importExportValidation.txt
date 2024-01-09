@@ -1,0 +1,13 @@
+ $validator = Validator::make($row->toArray(), [
+                'name' => 'required',
+                'deal_type' => 'required',
+                'organization_name' => 'required',
+                // Add other validation rules as needed
+            ]);
+
+            // Check for validation errors
+            if ($validator->fails()) {
+                // Handle validation errors, you can log or throw an exception
+                // For now, let's just continue to the next row
+                continue;
+            }

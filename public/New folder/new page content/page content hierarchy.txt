@@ -1,0 +1,44 @@
+  function removePageContent(pageContentId) {
+        let divDetails=$('#pageContentNew'+pageContentId);
+        if (divDetails) {
+            divDetails.remove();
+            let listItem = $('#activeLiTabContent' + pageContentId);
+            if (listItem) {
+                listItem.remove();
+            }
+            let pageContentTags = document.getElementsByClassName('pageContentATag');
+            $.each($('.pageContentATag'),function(index,element){
+                if($(element).attr('dataId') > pageContentId){
+                    var newCOuntPage= $(element).attr('dataItem');
+                    $(element).attr('dataItem', newCOuntPage - 1);
+                    $(element).html('Page Content Item ' + (newCOuntPage - 1));
+                }
+            });
+           
+    
+            pageItemCount--;
+            $.notify("Removed!", "success");
+        }
+    }
+    
+    function removePageSubContentTab(subId ,key){
+        let btn=event.target.parentElement.parentElement.parentElement;
+        btn.remove();
+        $('#activeLiTab'+subId).remove();
+        $.each($('.subPageContentATag'+key),function(index,element){
+            if($(element).attr('dataId') > subId){
+                var newCOuntPage= $(element).attr('dataItem');
+                $(element).attr('dataItem', newCOuntPage - 1);
+                $(element).html('Page Sub Content Item ' + (newCOuntPage - 1));
+            }
+        });
+        pageSubAcCount--;
+        $.notify("Removed!", "success");
+
+
+    }
+
+
+
+
+    <script src="https://rawgit.com/notifyjs/notifyjs/master/dist/notify.js"></script>
