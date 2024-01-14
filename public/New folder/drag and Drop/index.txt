@@ -1,0 +1,240 @@
+ async function renderRespectiveSettings(data = null) {
+        idArr = [];
+        if (data != null) {
+            categoryId = data;
+            // categoryName = data.name;
+        } else {
+            categoryId = event.target.value;
+            // categoryName = event.target.selectedOptions[0].text;
+        }
+        let url = "{{ route('ajax.getStatusSetting','something') }}";
+        let newUrl = url.replace("something", categoryId);
+        let response = await fetch(newUrl);
+     ;
+        if (response.status == 200) {
+            let data = await response.json();
+         ;
+            if (data.data.length > 0) {
+                let statData = data.data;
+                let statusSettingContainerDiv = document.getElementById('statusSettingContainerDiv');
+                statusSettingContainerDiv.childElementCount > 0 ? statusSettingContainerDiv.innerHTML = '' :
+                    statusSettingContainerDiv;
+                let leadContainerDiv = document.getElementById('leadContainerDiv');
+                leadContainerDiv.childElementCount > 0 ? leadContainerDiv.innerHTML = '' : leadContainerDiv;
+
+                statData.forEach(element => {
+                    let name = element.status_name.trim();
+                    let newname = name.replace(' ', '_') + '_' + element.id;
+                    let th = document.createElement('th');
+                    let td = document.createElement('td');
+                    th.classList.add('thPayment');
+                    td.classList.add('tdPayment');
+                    td.id = newname;
+                    idArr.push(newname);
+                    th.innerHTML = `
+
+                    
+                        <div class="lead_box" style="border-right:10px solid ${element.favcolor} !important;">
+   
+                                
+                                <div class="menu-nav">
+        <div class="menu-item">
+        <h6 class="mt-1 lead-progress" style="color:${element.favcolor}!important;">${element.status_name}
+        <span class="badge badge-light mb-3">${ element.leads.length }</span></h6>
+        </div>
+        <div class="dropdown-container" tabindex="-1">
+          <div class="three-dots"></div>
+          <div class="dropdown">
+            <a href="#"><div class="activity-dot">Convert</div></a>
+            <a href="#"><div class="activity-dot">Complete</div></a>
+            <a href="#"><div class="activity-dot">Progress</div></a>
+          </div>
+        </div>
+      </div>
+                               
+                          
+                        </div>
+                        <a href="" data-toggle="modal" data-target="#myModal" onclick="addLead(${element.id},'${element.status_name}')"><p class="mt-3" style="text-align:center;"> + Add ${element.status_name} </p></a>
+
+                        
+                    `;
+                    let leads = element.leads;
+                    if (leads.length > 0) {
+                        let indexCount = 0;
+                        leads.forEach(lead => {
+                            indexCount++;
+                            let rowDiv = document.createElement('div');
+                            let div = document.createElement('div');
+                            div.classList.add('lead_box1');
+                            if (lead.is_converted == 1) {
+                                div.setAttribute('draggable', false);
+                            } else {
+                                div.setAttribute('draggable', true);
+                            }
+                            div.setAttribute('ondragstart', 'dragStart()');
+                            div.setAttribute('id', `lead_box_${lead.id}`);
+                            rowDiv.classList.add('row');
+                            rowDiv.innerHTML = `
+
+                            
+                            <div class="col-md-12">
+
+                              <div class="row">
+
+                              
+                        <div class="col-lg-6 col-md-6">
+                                <a href="/leadprofile/${lead.id}"> 
+                                <h6 class="current_lead"> ${lead.relation.organization!=null ? (lead.relation.organization.name.length>15? lead.relation.organization.name.substr(0,15)+'...|':lead.relation.organization.name+'|'):''}  ${lead.relation.contact!=null? (lead.relation.contact.name.length>15? lead.relation.contact.name.substr(0,15)+"...": lead.relation.contact.name):'' }</h6>
+                                <h5 class="lead-ti">${ lead.title }</h5>
+                                
+                               
+           
+                                </a>
+                            </div>
+                           
+                              <div class="col-md-6">
+                            <div class="menu-nav"  style="float:right;">
+      
+        <div class="dropdown-container" tabindex="-1" style="float:right;">
+          <div class="three-dots"></div>
+          <div class="dropdown">
+            ${lead.is_converted!=1?`<div  onclick="convertDeal('${localURL}',${lead.id})"><div class="activity-dot">Convert</div></div>`:''}
+            <a href="#"><div class="activity-dot">Cancel</div></a>
+            <a href="#"><div class="activity-dot">Halt</div></a>
+            <a href="#"><div class="activity-dot">Add Handler</div></a>
+          </div>
+        </div>
+      </div>
+                               
+                          
+                        </div>
+                        </div>
+
+                        </div>
+                                
+                                </div>
+
+
+                                <div class="d-flex bd-highlight mt-3 p-3">
+                              <div class="flex-fill bd-highlight" >
+
+                                <span class="input-group-text" style="background-color:transparent!important; border:none!important; padding:0px;">
+                                <i class="fa fa-calendar deal"> ${lead.created_at.split('T')[0]}</i>
+    </div>
+  <div class="flex-fill bd-highlight align-self-center"><span class="card-link lead">${ lead.is_converted == 0 ? 'lead' :'Customer' }</span></div>
+ 
+</div>
+                  
+                            `;
+
+                            div.appendChild(rowDiv);
+                            td.appendChild(div);
+                        });
+                    } else {
+
+                    }
+                    statusSettingContainerDiv.appendChild(th);
+                    leadContainerDiv.appendChild(td);
+                });
+
+                idArr.forEach(id => {
+                    let box = document.getElementById(id);
+                    box.setAttribute('ondrop', 'drop()');
+                    box.setAttribute('ondragover', 'allowDrop()');
+                });
+            }
+        }
+    }
+
+
+ public function getStatusSetting(StatusSetting $category)
+    {
+        $data = [];
+        $organizationRepo = new OrganizationRepository();
+        if (count($category->leadSettings) > 0) {
+
+            $lead_heirarchy_settings = LeadSetting::where('status_setting_id', $category['id'])->where('heirarchy_order', '!=', null)->orderBy('heirarchy_order')->with('leads')->get();
+            if (count($lead_heirarchy_settings) > 0) {
+                foreach ($lead_heirarchy_settings as $key => $l_s) {
+                    array_push($data, $l_s->toArray());
+                }
+            }
+
+            $first_setting = LeadSetting::where('status_setting_id', $category['id'])->where('notifier', 'First')->with('leads')->first();
+            $last_setting = LeadSetting::where('status_setting_id', $category['id'])->where('notifier', 'Last')->with('leads')->first();
+            if (($first_setting != null) || ($last_setting != null)) {
+                isset($first_setting) ? array_unshift($data, $first_setting->toArray()) : $data;
+                isset($last_setting) ? array_push($data, $last_setting->toArray()) : $data;
+            }
+        }
+
+        $new_data = [];
+        foreach ($data as $key => $datum) {
+            $new_lead = [];
+            if (count($datum['leads']) > 0) {
+                foreach ($datum['leads'] as $key1 => $lead) {
+                    $emails = $organizationRepo->getFields('email', $lead['organization_id']);
+                    $lead['emails'] = $emails;
+                    $lead['relation'] = Lead::where('id', $lead['id'])->with('organization', 'contact')->first();
+                    if ($lead['creator_user'] == auth()->id()) {
+                        # code...
+                        array_push($new_lead, $lead);
+                    }
+                }
+            }
+            $datum['leads'] = $new_lead;
+            array_push($new_data, $datum);
+        }
+        return response()->json([
+            'data' => $new_data
+        ]);
+    }
+
+
+function dragStart() {
+        let id = event.target.id;
+        event.dataTransfer.setData('text/plain', id);
+    }
+ async function drop() {
+        const id = event.dataTransfer.getData('text/plain');
+        const draggable = document.getElementById(id);
+        event.target.appendChild(draggable);
+        let splitId = id.split('_');
+        let leadId = splitId[splitId.length - 1];
+        let splitStatusId = event.target.id.split('_');
+        let statusId = splitStatusId[splitStatusId.length - 1];
+
+        let formData = new FormData();
+        formData.append('lead_id', leadId);
+        formData.append('status_id', statusId);
+
+        let url = "{{ route('ajax.updateLead') }}";
+        let requestOptions = {
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            },
+            method: "POST",
+            body: formData
+        };
+        let response = await fetch(url, requestOptions);
+        if (response.status == 200) {
+            let data = await response.json();
+            let selectedOption = document.getElementById('categorySelector').value;
+            if (data.response == true) {
+                renderRespectiveSettings(selectedOption);
+            } else {
+                renderRespectiveSettings(selectedOption);
+            }
+        }
+     ;
+    }
+
+    function allowDrop() {
+        event.preventDefault();
+    }
+
+
+
+
+
+
