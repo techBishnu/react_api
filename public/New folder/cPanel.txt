@@ -1,0 +1,118 @@
+use Maatwebsite\Excel\Concerns\OnEachRow;
+use Maatwebsite\Excel\Row;
+use App\Models\User;
+use App\Models\Organization;
+use App\Models\Contact;
+use Illuminate\Support\Facades\DB;
+
+class YourImportClass implements OnEachRow
+{
+    // ... (existing methods)
+
+    public function onRow(Row $row)
+    {
+        // Get the raw data from the row
+        $rowData = $row->toArray();
+
+        // Your existing logic for extracting and processing data
+        // ...
+
+        // Validation for 'Contact Person Name,' 'Contact Email,' and 'Contact Phone Number'
+        $contactName = $rowData[2] ?? null;
+        $contactEmail = $rowData[3] ?? null;
+        $contactPhoneNumber = $rowData[4] ?? null;
+
+        if (empty($contactName)) {
+            // Handle validation failure for 'Contact Person Name' (required)
+            $this->validationErrors[] = 'Contact Person Name is required for row ' . $row->getIndex();
+        } else {
+            // 'Contact Person Name' is provided, check for 'Contact Email' and 'Contact Phone Number'
+            if (empty($contactEmail)) {
+                // Handle validation failure for 'Contact Email' (required when 'Contact Person Name' is provided)
+                $this->validationErrors[] = 'Contact Email is required when Contact Person Name is provided for row ' . $row->getIndex();
+            }
+
+            if (empty($contactPhoneNumber)) {
+                // Handle validation failure for 'Contact Phone Number' (required when 'Contact Person Name' is provided)
+                $this->validationErrors[] = 'Contact Phone Number is required when Contact Person Name is provided for row ' . $row->getIndex();
+            }
+        }
+
+        // Continue with your existing logic for other validations and data processing
+        // ...
+    }
+
+    // ... (existing methods)
+}
+
+
+
+
+
+
+
+
+
+1. cPanel
+Creation of databases,
+Associating users with database and  specific permissions for it,
+Deploying projects within the public_html folder for web access,
+Configuration of email settings,
+Configuring cron jobs for scheduled tasks,
+Terminal for PHP Artisan commands and server-related tasks,
+Backup of storage, database, and project files,
+Backup performed before each deployment,
+
+2. Server 38
+Project: Impexo
+We have two prject Frontend and Backend within the Impexo project or folder.
+Script for automated backup of database, storage, and backend project.
+ Also we can manually Backup folder for current project, backend, database, and storage.
+Addressed Spatie vendor log issue in [ ActiveLogger.php ].
+Helper functions implemented for Spatie issue resolution.
+For React, running npm run build for any changes or updates.
+
+3. Server 35
+Multiple projects running in both staging and live in this server.
+Imagin Project:
+Configuration setup involving two databases and every time we need to update thoses according to project.
+
+
+
+Here's a summary of the information you provided, incorporating images where relevant:
+
+cPanel:
+
+Database Management:
+Creates databases
+Associates users with specific permissions
+Project Deployment:
+Deploys projects within the public_html folder for web access
+Email Configuration:
+Sets up email accounts and settings
+Scheduled Tasks:
+Configures cron jobs to automate tasks
+Terminal Access:
+Provides a terminal for PHP Artisan commands and server-related tasks
+Backups:
+Backs up storage, databases, and project files
+Performs backups before each deployment
+Image of cPanel interfaceOpens in a new window
+docs.cpanel.net
+cPanel interface
+Server 38:
+
+Project: Impexo
+Frontend and Backend components
+Automated backup script for database, storage, and backend project
+Manual backup option for current project, backend, database, and storage
+Spatie vendor log issue addressed in ActiveLogger.php
+Helper functions implemented for Spatie issue resolution
+React updates triggered by running npm run build
+Server 35:
+
+Multiple Projects:
+Hosts projects in both staging and live environments
+Imagin Project:
+Requires configuration with two databases
+Databases need manual updates according to project needs
