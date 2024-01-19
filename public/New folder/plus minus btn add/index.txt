@@ -1,0 +1,163 @@
+  <div class="container">
+        <div class="row" id="test_div">
+            <div class="col-md-12">
+                <div>
+                    <a onclick="AddFunction()">Add</a>
+                    <a onclick="removeFunction()">remove</a>
+                </div>
+                <div class="newAdd" id="newAdd">
+                    <input type="text">
+                    <input type="text">
+                    <input type="text">
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <script>
+      function AddFunction() {
+        var lastNewAdd = $('#test_div .newAdd').last();
+
+        // Check if the last newAdd div contains the "Add" button
+        if (!lastNewAdd.find('a:contains("Add")').length) {
+            lastNewAdd.append(`
+                <a onclick="AddFunction()">Add</a>
+            `);
+        }
+
+        $('#test_div').append(`
+            <div class="col-md-12">
+                <div>
+                    <a onclick="AddFunction()">Add</a>
+                    <a onclick="removeFunction()">remove</a>
+                </div>
+                <div class="newAdd" id="newAdd">
+                    <input type="text">
+                    <input type="text">
+                    <input type="text">
+                </div>
+            </div>
+        `);
+    }
+
+    function AddFunction() {
+        var lastNewAdd = $('#test_div .newAdd').last();
+
+        // Remove "Add" button from all divs
+        $('#test_div .newAdd a:contains("Add")').remove();
+
+        // Create a new div with the "Add" button
+        var newDiv = `
+            <div class="col-md-12 newAdd">
+                <div>
+                    <a onclick="AddFunction()">Add</a>
+                    <a onclick="removeFunction()">remove</a>
+                </div>
+                <div class="newAddContent">
+                    <input type="text">
+                    <input type="text">
+                    <input type="text">
+                </div>
+                <div class="newAdd">
+                    <a onclick="AddFunction()">Add</a>
+                </div>
+            </div>
+        `;
+
+        // Check if the current div is the last one
+        if (!lastNewAdd.length) {
+            // If it's the last one, append the new div
+            $('#test_div').append(newDiv);
+        } else {
+            // If not the last one, append the new div without the "Add" button
+            newDiv = newDiv.replace('<a onclick="AddFunction()">Add</a>', '');
+            $('#test_div').append(newDiv);
+        }
+    }
+
+    function removeFunction() {
+    var parentDiv = event.target.parentElement.parentElement;
+
+    // Check if it's the last div with class 'newAdd'
+    if ($(parentDiv).is(':last-child')) {
+        // If it's the last one, remove it
+        parentDiv.remove();
+    } else {
+        // If it's not the last one, remove the div
+        parentDiv.remove();
+    }
+
+    // Get the new last div
+    var lastNewAdd = $('#test_div .newAdd').last();
+
+    // Add the "Add" button to the new last div
+    lastNewAdd.find('.newAdd').append('<a onclick="AddFunction()">Add</a>');
+}
+
+    </script>
+
+
+
+
+<div class="container">
+    <div class="row" id="test_div">
+        <div class="col-md-12">
+            <div>
+                <a onclick="AddFunction()">Add</a>
+                <a onclick="removeFunction()">remove</a>
+            </div>
+            <div class="newAdd" id="newAdd">
+                <input type="text">
+                <input type="text">
+                <input type="text">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function AddFunction() {
+        // Remove "Add" button from all divs
+        $('#test_div .newAdd a:contains("Add")').remove();
+
+        // Create a new div with the "Add" button
+        var newDiv = `
+            <div class="col-md-12 newAdd">
+                <div>
+                    <a onclick="AddFunction()">Add</a>
+                    <a onclick="removeFunction()">remove</a>
+                </div>
+                <div class="newAddContent">
+                    <input type="text">
+                    <input type="text">
+                    <input type="text">
+                </div>
+                <div class="newAdd">
+                    <a onclick="AddFunction()">Add</a>
+                </div>
+            </div>
+        `;
+
+        // Append the new div
+        $('#test_div').append(newDiv);
+    }
+
+    function removeFunction() {
+        var parentDiv = event.target.parentElement.parentElement;
+
+        // Check if it's the last div with class 'newAdd'
+        if ($(parentDiv).is(':last-child')) {
+            // If it's the last one, remove it
+            parentDiv.remove();
+
+            // Get the new last div
+            var lastNewAdd = $('#test_div .newAdd').last();
+
+            // Add the "Add" button to the new last div
+            lastNewAdd.find('.newAdd').append('<a onclick="AddFunction()">Add</a>');
+        } else {
+            // If it's not the last one, remove the div
+            parentDiv.remove();
+        }
+    }
+</script>

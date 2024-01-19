@@ -236,5 +236,29 @@ function dragStart() {
 
 
 
+let formData = new FormData();
+        formData.append('todo_id', todoId);
+        formData.append('status_id', statusId);
+
+        let url = "{{ route('todo.update') }}";
+        let requestOptions = {
+            headers: {
+                "X-CSRF-TOKEN": "{{ csrf_token() }}"
+            }
+            , method: "POST"
+            , body: formData
+        };
+        let response = await fetch(url, requestOptions);
+        if (response.status == 200) {
+            let data = await response.json();
+            let selectedOption = document.getElementById('categorySelector').value;
+            if (data.response == true) {
+                renderRespectiveSettings(selectedOption);
+            } else {
+                renderRespectiveSettings(selectedOption);
+            }
+        }
+
+
 
 
