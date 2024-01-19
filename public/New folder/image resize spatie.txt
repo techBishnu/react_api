@@ -1,0 +1,27 @@
+php artisan media-library:regenerate 
+Inside Model 
+
+use Spatie\Image\Manipulations;
+
+ public function __construct()
+    {
+        $this->addMediaConversion('webp')
+        ->format('webp')
+        ->performOnCollections('product_banner_img')
+        ->fit(Manipulations::FIT_FILL, 1920, 700)
+        ->height(700)
+        ->nonQueued();
+
+        $this->addMediaConversion('webp')
+        ->format('webp')
+        ->performOnCollections('product_feature_img')
+        ->fit(Manipulations::FIT_CONTAIN, 600, 600)
+        ->height(600)
+        ->width(600)
+        ->nonQueued();
+
+
+    }
+
+$product->getMedia('product_feature_img')[0]->getFullUrl('webp') 
+
