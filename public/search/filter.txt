@@ -1,0 +1,173 @@
+  public function reportGenerate(Request $request){
+        $data = $request->all();
+        try {
+        
+        // $q = TaskUser::query();
+        // if (request('asignee')) {
+        //     $q->where('user_id', $data['asignee']);
+        // }
+        // if (request('project')) {
+        //     $q->where('status_setting_id', $data['project']);
+        // }
+
+        // $results = $q->with('task','task.userTaskLogTimes','statusSetting')->get();
+
+        // $timeLogquery=UserTaskLogTime::query();
+        // $taskIds=[];
+        // foreach ($results as $key => $value) {
+        //     $value['timelogTask']= $timeLogquery->where('parent_task_id',$value['task']['id'])
+        //     ->where('user_id',$data['asignee']) 
+        //     ->get();
+        //     $taskIds[]=$value['task']['id'];
+        // }
+        // $timelogUserTasks=UserTaskLogTime::whereNotIn('parent_task_id',$taskIds)->where('user_id',$data['asignee'])->get();
+        // if(array_key_exists('project',$data)){
+        //     $tasksIds=[];
+        //     $project=StatusSetting::findOrFail($data['project']);
+        //     if($project && count($project->leadSettings)>0){
+        //         foreach ($project->leadSettings as $setting) {
+        //            foreach ($setting->tasks as $key => $value) {
+        //             $tasksIds[]=$value['id'];
+        //            }
+        //         }
+        //         dd($tasksIds);
+               
+        //     }
+        // }
+        $tasksIds=[];
+        if (array_key_exists('project', $data)) {
+            $project = StatusSetting::with('leadSettings')->findOrFail($data['project']);
+            
+            if ($project) {
+                $tasksIds = $project->leadSettings->pluck('tasks.*.id')->flatten()->toArray();
+                // flatten used for multi dimension to single dimention  hasmany relation 
+            }
+        }
+        // dd($tasksIds);
+        if($data['time']=="today"){
+            $date=Carbon::today()->format('Y-m-d');
+        }else if($data['time']=="yesterday"){
+            $date=Carbon::yesterday()->format('Y-m-d');
+        }
+        $results=UserTaskLogTime::when($data['asignee'] !=null,function ($q) use($data){
+            return $q->where('user_id',$data['asignee']);
+        })->when($data['time']!=null,function ($q) use($date) {
+            return $q->whereDate('created_at',$date);
+        })->when(count($tasksIds) > 0, function ($q) use ($tasksIds) {
+            return $q->whereIn('parent_task_id', $tasksIds);
+        }, function ($q) use ($tasksIds) {
+            return $q->whereNotIn('parent_task_id', $tasksIds);
+        })
+        ->get();
+        // $results = UserTaskLogTime::when($data['asignee'] != null, function ($q) use ($data) {
+        //     return $q->where('user_id', $data['asignee']);
+        // })->when($data['time'] != null, function ($q) use ($data, $date) {
+        //     return $q->whereDate('created_at', $date);
+        // })->when(count($tasksIds) > 0, function ($q) use ($tasksIds) {
+        //     return $q->whereIn('parent_task_id', $tasksIds);
+        // }, function ($q) use ($tasksIds) {
+        //     return $q->whereNotIn('parent_task_id', $tasksIds);
+        // })->get();
+        return response()->json([
+            'response' => true,
+            'page'=>view('backend.project_report.components.reportDataTable',compact('results'))->render(),
+        ]);
+    } catch (\Throwable $th) {
+        return response()->json([
+            'response' => false,
+            'message'=>$th->getMessage(),
+        ]);
+    }
+    }
+
+
+@extends('backend.layouts.app')
+@section('content')
+<style>
+    .filterbtn {
+        margin-top: 22px;
+    }
+</style>
+<div class="container-fluid border rounderd p-4">
+    <div class="row">
+        <div class="col-md-12">
+            <center>
+                <h4>Project Report</h4>
+            </center>
+        </div>
+        <div class="col-md-12 mt-2 my-2 py-2">
+            <form action="{{ route('task.reportGenerate') }}" method="POST" id="project_report_form">
+                <div class="row d-flex justify-content-center">
+                    @csrf
+                    <div class="col-md-3">
+                        <label for="">Project</label>
+                        <select name="project" id="" class="form-control">
+                            <option value="{{ null }}">Choose Option</option>
+                            @forelse ($projects as $project)
+                            <option value="{{ $project['id'] }}">{{ $project['name'] }}</option>
+                            @empty
+                            <option value="{{ null }}" disabled>No Data</option>
+                            @endforelse
+                        </select>
+                    </div>
+                  
+                    <div class="col-md-3">
+                        <label for="">Asignee</label>
+                        <select name="asignee" id="" class="form-control">
+                            <option value="{{ null }}">Choose Option</option>
+                            @forelse ($users as $user)
+                            <option value="{{ $user['id'] }}">{{ $user['name'] }}</option>
+                            @empty
+                            <option value="{{ null }}" disabled>No Data</option>
+                            @endforelse
+                        </select>
+                    </div>
+                    {{-- <div class="col-md-2">
+                        <label for="">Status</label>
+                        <select name="status" id="statusOfProject" class="form-control">
+                            <option value="{{ null }}">Choose Option</option>
+                        </select>
+                    </div> --}}
+                    <div class="col-md-3">
+                        <label for="">Time</label>
+                        <select name="time" id="" class="form-control">
+                            <option value="today">Today</option>
+                            <option value="yesterday ">Yesterday </option>
+                        </select>
+                    </div>
+                    <div class="col-md-1 mt-3">
+                        <button type="button" onclick="submitReportProjectForm()" class="btn btn-primary filterbtn">Filter</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="row" id="table-data-for-report">
+
+    </div>
+ 
+</div>
+<script>
+    function submitReportProjectForm(){
+        let form=document.getElementById('project_report_form');
+        let formData=new FormData(form);
+        $.ajax({
+            type: "post",
+            url: "{{ route('task.reportGenerate') }}",
+            data: formData,
+            contentType:false,
+            processData:false,
+            success: function (response) {
+                if(response.response){
+                    $('#table-data-for-report').html(response.page);
+                }else{
+                    $('#table-data-for-report').html('');
+                }
+            }
+        });
+    }
+</script>
+
+@endsection
+
+
