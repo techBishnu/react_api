@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Laravel</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+</head>
+
+<body class="antialiased bg-dark text-white">
+    <div class="container">
+        <div class="row" id="test_div">
+            <h1>Task Timer</h1>
+
+            <button class="btn btn-primary" id="play">Play</button>
+            <button class="btn btn-primary" id="stop">Stop</button>
+
+            <input type="text" id="timer" class="form-control" readonly value="00:00:00">
+            <div id="status"></div>
+            <div id="timestamp"></div>
+        </div>
+    </div>
+
+    <script>
+        let startTime;
+        let timerInterval;
+        let elapsedTime = 0;
+        let timestamps = [];
+
+        document.getElementById('play').addEventListener('click', function () {
+            if (!startTime) {
+                // Handle the case where it was not started yet
+                startTime = new Date().getTime();
+                startTimer();
+                updateStatus('Play');
+                sendAjaxRequest('start');
+                saveDataToLocalStorage();
+            }
+        });
+
+        document.getElementById('stop').addEventListener('click', function () {
+            if (startTime) {
+                clearInterval(timerInterval);
+                updateStatus('Stop');
+                updateTimestamp();
+                document.getElementById('timer').value = '00:00:00';
+                startTime = null;
+                elapsedTime = 0;
+                sendAjaxRequest('stop');
+                saveDataToLocalStorage();
+            }
+        });
+
+        function startTimer() {
+            timerInterval = setInterval(function () {
+                let currentTime = new Date().getTime();
+                elapsedTime = currentTime - startTime;
+
+                let hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+                let minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+                hours = String(hours).padStart(2, '0');
+                minutes = String(minutes).padStart(2, '0');
+                seconds = String(seconds).padStart(2, '0');
+
+                document.getElementById('timer').value = hours + ':' + minutes + ':' + seconds;
+            }, 1000);
+        }
+
+        function updateStatus(status) {
+            let statusElement = document.getElementById('status');
+            let newParagraph = document.createElement('p');
+            let time = document.getElementById('timer').value;
+            newParagraph.innerHTML = `Status: ${status}  Time spent: ${time} at ${new Date().toLocaleString()}`;
+            statusElement.appendChild(newParagraph);
+        }
+
+        function updateTimestamp() {
+            let timestampElement = document.getElementById('timestamp');
+            let timestamp = new Date().toLocaleString();
+            timestampElement.innerText = 'Timestamp: ' + timestamp;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDataFromLocalStorage(); // Load existing data on page load
+            resumeTimer();
+        });
+
+        function sendAjaxRequest(action) {
+            $.ajax({
+                url: `/${action}`,
+                method: 'POST',
+                data: {
+                    action: action,
+                    _token: '{{ csrf_token() }}',
+                },
+                success: function (response) {
+                    console.log(response);
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        function saveDataToLocalStorage() {
+            localStorage.setItem('timerData', JSON.stringify({
+                startTime: startTime,
+                elapsedTime: elapsedTime,
+                timestamps: timestamps
+            }));
+        }
+
+        // Load data from local storage on page load
+        function loadDataFromLocalStorage() {
+            const storedData = localStorage.getItem('timerData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                startTime = data.startTime;
+                elapsedTime = data.elapsedTime;
+                timestamps = data.timestamps;
+            }
+        }
+
+        // Resume the timer if it was running
+        function resumeTimer() {
+            if (startTime) {
+                startTimer();
+                updateStatus('Play');
+            }
+        }
+    </script>
+</body>
+
+</html>
+
+
+
+
+
+{{-- 
+    
+    <!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Laravel</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+</head>
+
+<body class="antialiased bg-dark text-white">
+    <div class="container">
+        <div class="row" id="test_div">
+            <h1>Task Timer</h1>
+
+            <button class="btn btn-primary" id="play">Play</button>
+            <button class="btn btn-primary" id="stop">Stop</button>
+
+            <input type="text" id="timer" class="form-control" readonly value="00:00:00">
+            <div id="status"></div>
+            <div id="timestamp"></div>
+        </div>
+    </div>
+
+    <script>
+        let startTime;
+        let timerInterval;
+        let elapsedTime = 0;
+        let timestamps = [];
+
+        document.getElementById('play').addEventListener('click', function () {
+            if (!startTime) {
+                startTime = new Date().getTime();
+                startTimer();
+                updateStatus('Play');
+                sendAjaxRequest('start');
+                saveDataToLocalStorage();
+            }
+        });
+
+        document.getElementById('stop').addEventListener('click', function () {
+            if (startTime) {
+                clearInterval(timerInterval);
+                updateStatus('Stop');
+                updateTimestamp();
+                document.getElementById('timer').value = '00:00:00';
+                startTime = null;
+                elapsedTime = 0;
+                sendAjaxRequest('stop');
+                saveDataToLocalStorage();
+            }
+        });
+
+        function startTimer() {
+            timerInterval = setInterval(function () {
+                let currentTime = new Date().getTime();
+                elapsedTime = currentTime - startTime;
+
+                let hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+                let minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+                let seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+                hours = String(hours).padStart(2, '0');
+                minutes = String(minutes).padStart(2, '0');
+                seconds = String(seconds).padStart(2, '0');
+
+                document.getElementById('timer').value = hours + ':' + minutes + ':' + seconds;
+
+                // Check if the current time is 6:00 PM
+                let currentDateTime = new Date();
+                if (currentDateTime.getHours() === 18 && currentDateTime.getMinutes() === 0) {
+                    // Stop the timer and make an Ajax call
+                    stopTimer();
+                    sendAjaxRequest('customAction'); // Replace with your custom action
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            clearInterval(timerInterval);
+            updateStatus('Timer Stopped');
+            updateTimestamp();
+            document.getElementById('timer').value = '00:00:00';
+            startTime = null;
+            elapsedTime = 0;
+            saveDataToLocalStorage();
+        }
+
+        function updateStatus(status) {
+            let statusElement = document.getElementById('status');
+            let newParagraph = document.createElement('p');
+            let time = document.getElementById('timer').value;
+            newParagraph.innerHTML = `Status: ${status}  Time spent: ${time} at ${new Date().toLocaleString()}`;
+            statusElement.appendChild(newParagraph);
+        }
+
+        function updateTimestamp() {
+            let timestampElement = document.getElementById('timestamp');
+            let timestamp = new Date().toLocaleString();
+            timestampElement.innerText = 'Timestamp: ' + timestamp;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDataFromLocalStorage(); // Load existing data on page load
+            resumeTimer();
+        });
+
+        function sendAjaxRequest(action) {
+            $.ajax({
+                url: `/${action}`,
+                method: 'POST',
+                data: {
+                    action: action,
+                    _token: '{{ csrf_token() }}',
+                },
+                success: function (response) {
+                    console.log(response);
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        function saveDataToLocalStorage() {
+            localStorage.setItem('timerData', JSON.stringify({
+                startTime: startTime,
+                elapsedTime: elapsedTime,
+                timestamps: timestamps
+            }));
+        }
+
+        function loadDataFromLocalStorage() {
+            const storedData = localStorage.getItem('timerData');
+            if (storedData) {
+                const data = JSON.parse(storedData);
+                startTime = data.startTime;
+                elapsedTime = data.elapsedTime;
+                timestamps = data.timestamps;
+            }
+        }
+
+        function resumeTimer() {
+            if (startTime) {
+                startTimer();
+                updateStatus('Play');
+            }
+        }
+    </script>
+</body>
+
+</html>
+--}}
