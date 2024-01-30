@@ -1,0 +1,196 @@
+<div class=" table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>SN</th>
+                <th>Project</th>
+                <th>Task</th>
+                <th>TimeLog [Minutes]</th>
+                <th>Details</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @forelse($tasks as $key=>$task)
+            <tr>
+                <td>{{$key+1 }}</td>
+                <td>{{$task->setting->status_setting->name ?? '-' }}</td>
+                <td>{{ $task->name}}</td>
+                <td> {{$task['total_time_log']}}</td>
+                <td>
+                    <i class="fa fa-eye customer" data-toggle="modal" data-target="#viewAllTaskDetails{{ $task['id'] }}" ></i>
+                        {{-- <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>SN</th>
+                                    <th>Task</th>
+                                    <th>Sub Task</th>
+                                    <th>TimeLog [Minutes]</th>
+                                    <th>Remarks</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($task['subTasks'] as $key=>$result)
+                                <tr>
+                                    <td>{{$key+1 }}</td>
+                                    <td>{{ $result->parentTask->name ?? '-'}}</td>
+                                    <td>{{ $result->subParentTask->name ?? '-'}}</td>
+                                    <td> {{$result['log_time']}}</td>
+                                    <td data-toggle="tooltip" title="{{ $result['remarks'] }}"  data-placement="left">{{ \Illuminate\Support\Str::limit($result['remarks'], 30,'...') }}</td>
+                                    <td>{{strtoupper($result->parentTask->setting->status_name)}}</td>
+                                </tr>
+                                @empty
+                                <h6>Data not found!</h6>
+                                @endforelse
+                            </tbody>
+                        </table> --}}
+
+                </td>
+                <td>{{strtoupper($task->setting->status_name)}}</td>
+                <!-- Button trigger modal -->
+            </tr>
+            <!-- Modal -->
+            <div class="modal fade" id="viewAllTaskDetails{{ $task['id'] }}" tabindex="-1" role="dialog" style="display: none;"
+                aria-labelledby="exampleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl" role="document">
+                    <div class="modal-content " id="detailsOfAlltaskView{{ $task['id'] }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="exampleModalLabel">View Details Of {{ $task->name}} </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="container-fluid">
+                                <div class="row d-flex align-items-center justify-content-center text-center border-bottom">
+                                    <div class="col-md-1 font-weight-bold">SN</div>
+                                    <div class="col-md-3 font-weight-bold">Task</div>
+                                    <div class="col-md-2 font-weight-bold">Sub Task</div>
+                                    <div class="col-md-1 font-weight-bold">TimeLog</div>
+                                    <div class="col-md-4 font-weight-bold">Remarks</div>
+                                    <div class="col-md-1 font-weight-bold">Status</div>
+                                </div>
+                                @forelse($task['subTasks'] as $key=>$result)
+                                <div class="row my-1 text-center mt-3 py-1">
+                                    <div class="col-md-1">{{$key+1 }}</div>
+                                    <div class="col-md-3">{{ $result->parentTask->name ?? '-'}}</div>
+                                    <div class="col-md-2">{{ $result->subParentTask->name ?? '-'}}</div>
+                                    <div class="col-md-1">{{$result['log_time']}}</div>
+                                    <div class="col-md-4">{{$result['remarks']}}</div>
+                                    <div class="col-md-1">{{strtoupper($result->parentTask->setting->status_name)}}</div>
+                                </div>
+                                @empty
+                                <h6>Data not found!</h6>
+                                @endforelse
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            @empty
+            <h6>Data not found!</h6>
+            @endforelse
+        </tbody>
+    </table>
+</div>
+
+
+ public function reportGenerate(Request $request)
+    {
+        $data = $request->all();
+        try {
+            $tasksIds = [];
+            if (
+                array_key_exists('project', $data) &&
+                $data['project'] != null
+            ) {
+                $project = StatusSetting::with('leadSettings')->findOrFail(
+                    $data['project']
+                );
+                if ($project) {
+                    $tasksIds = $project->leadSettings
+                        ->pluck('tasks.*.id')
+                        ->flatten()
+                        ->toArray();
+                    // flatten used for multi dimension to single dimention  hasmany relation
+                }
+            }
+            $date =
+                $data['time'] == 'today'
+                    ? Carbon::today()->format('Y-m-d')
+                    : Carbon::yesterday()->format('Y-m-d');
+
+            if ($data['asignee'] == null && $data['project'] == null) {
+                $results = [];
+            } else {
+                $results = UserTaskLogTime::when(
+                    $data['asignee'] != null,
+                    function ($q) use ($data) {
+                        return $q->where('user_id', $data['asignee']);
+                    }
+                )
+                    ->when($data['time'] != null, function ($q) use ($date) {
+                        return $q->whereDate('created_at', $date);
+                    })
+                    ->when($data['project'] != null, function ($q) use (
+                        $tasksIds
+                    ) {
+                        return $q->whereIn('parent_task_id', $tasksIds);
+                    })
+                    ->get();
+            }
+            //   unique ids for task
+            $tasks = [];
+            if (count($results) > 0) {
+                $uniqueTask = $results->pluck('parent_task_id')->unique();
+                if ($data['asignee'] != null) {
+                    foreach ($uniqueTask as $newid) {
+                        $total_time_log = UserTaskLogTime::where(
+                            'parent_task_id',
+                            $newid
+                        )
+                            ->whereDate('created_at', $date)
+                            ->where('user_id', $data['asignee'])
+                            ->sum('log_time');
+                        $task = Task::findOrFail($newid);
+                        $task['total_time_log'] = $total_time_log;
+                        $task['subTasks']=UserTaskLogTime::where('parent_task_id',$newid)
+                            ->where('user_id', $data['asignee'])
+                            ->whereDate('created_at', $date)
+                            ->get();
+                        $tasks[] = $task;
+                    }
+                } else {
+                    foreach ($uniqueTask as $newid) {
+                        $total_time_log = UserTaskLogTime::where(
+                            'parent_task_id',
+                            $newid
+                        )
+                            ->whereDate('created_at', $date)
+                            ->sum('log_time');
+                        $task = Task::findOrFail($newid);
+                        $task['total_time_log'] = $total_time_log;
+                        $task['subTasks']=UserTaskLogTime::where('parent_task_id',$newid)
+                            ->whereDate('created_at', $date)
+                            ->get();
+                        $tasks[] = $task;
+                    }
+                }
+            }
+
+            return response()->json([
+                'response' => true,
+                'page' => view(
+                    'backend.project_report.components.reportDataTable',
+                    compact('results', 'tasks')
+                )->render(),
+            ]);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'response' => false,
+                'message' => $th->getMessage(),
+            ]);
+        }
+    }
