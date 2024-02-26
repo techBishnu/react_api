@@ -1,0 +1,54 @@
+<script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+@if ($id=="pie_chartProjectSummary")
+<script type="text/javascript">
+  google.charts.load('current', {'packages':['corechart']});
+  google.charts.setOnLoadCallback(drawChart);
+
+  function drawChart() {
+
+    var data = google.visualization.arrayToDataTable([
+
+      ['Task', 'Task in Project'],
+        @foreach ($projects as $project)
+    
+        ['{{ $project->name }}',     {{ $project['percentage'] }}],
+        @endforeach
+    ]);
+
+    var options = {
+      title: 'Projects Summary'
+    };
+
+    var chart = new google.visualization.PieChart(document.getElementById('{{ $id }}'));
+
+    chart.draw(data, options);
+  }
+</script>
+@else 
+
+<script type="text/javascript">
+    google.charts.load('current', {'packages':['corechart']});
+    google.charts.setOnLoadCallback(drawChart);
+  var Id="{{ $projectId }}";
+    function drawChart() {
+  
+      var data = google.visualization.arrayToDataTable([
+  
+        ['Task', 'Task in Project'],
+          @foreach ($project->leadSettings as $statusask)
+          ['{{ $statusask->status_name }}',    {{ $statusask['percentage']}}],
+          @endforeach
+      ]);
+  
+      var options = {
+        title: '{{ $project->name }} Summary'
+      };
+  
+      var chart = new google.visualization.PieChart(document.getElementById('{{ $id }}'));
+  
+      chart.draw(data, options);
+    }
+  </script>
+  
+  @endif
+  <div id="{{ $id }}" style="width: 100vh; height:400px;"></div>
