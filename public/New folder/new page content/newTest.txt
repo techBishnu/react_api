@@ -1,9 +1,0 @@
-$ls->tasks = $ls->tasks->filter(function ($task) use ($userId) {
-    // Check if the task is a parent task or if it's a subtask assigned to the user
-    return ($task->parent_id === null && $task->users->contains('id', $userId)) ||
-           ($task->parent_id !== null && $task->parent->users->contains('id', $userId));
-})->map(function ($task) {
-    $task['subTaskCount'] = $task->sub_task_count;
-    $task['assigneeName'] = $task->users->pluck('name')->join(',');
-    return $task;
-});
